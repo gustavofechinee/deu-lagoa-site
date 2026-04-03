@@ -2,8 +2,8 @@
 <html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <link rel="manifest" href="./site.webmanifest" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Hotel Restô Deu Lagoa Uruau</title>
     <meta
@@ -15,7 +15,7 @@
       property="og:description"
       content="Hospedagem, restô e paisagem na Lagoa do Uruau. Vitrine premium com fluxo de pre-reserva e painel administrativo."
     />
-    <meta property="og:image" content="/deu-lagoa/hero-lagoa-hq.jpg" />
+    <meta property="og:image" content="./deu-lagoa/hero-lagoa-hq.jpg" />
     <meta property="og:type" content="website" />
     <meta property="og:locale" content="pt_BR" />
     <meta name="theme-color" content="#08130f" />
@@ -29,6 +29,15 @@
         "sameAs": ["https://www.instagram.com/deulagoauruau/"]
       }
     </script>
+    <!-- GITHUB_PAGES_BRANCH_REDIRECT_START -->
+    <script>
+      window.__IS_GITHUB_PAGES__ = location.hostname.endsWith("github.io");
+      if (window.__IS_GITHUB_PAGES__ && !location.pathname.includes("/site/")) {
+        const target = new URL("./site/", location.href);
+        location.replace(target.href);
+      }
+    </script>
+    <!-- GITHUB_PAGES_BRANCH_REDIRECT_END -->
   </head>
   <body>
     <div id="app"></div>

@@ -1,3 +1,5 @@
+const asset = (path) => `${import.meta.env.BASE_URL}${path}`;
+
 export const seedContent = {
   version: 7,
   resort: {
@@ -17,12 +19,12 @@ export const seedContent = {
     checkOut: "sob consulta",
     seasonLabel: "Hotel + Restaurante | Lagoa do Uruau",
     sellerCode: "deulagoa2026",
-    heroImage: "/deu-lagoa/hero-lagoa-hq.jpg",
-    profileImage: "/deu-lagoa/perfil.jpg",
-    signatureImage: "/deu-lagoa/resto-noite-hq.jpg",
-    culinaryImage: "/deu-lagoa/suite-casal-hq.jpg",
-    featureVideo: "/deu-lagoa/lagoa-cinema.mp4",
-    featureVideoPoster: "/deu-lagoa/hero-lagoa-hq.jpg",
+    heroImage: asset("deu-lagoa/hero-lagoa-hq.jpg"),
+    profileImage: asset("deu-lagoa/perfil.jpg"),
+    signatureImage: asset("deu-lagoa/resto-noite-hq.jpg"),
+    culinaryImage: asset("deu-lagoa/suite-casal-hq.jpg"),
+    featureVideo: asset("deu-lagoa/lagoa-cinema.mp4"),
+    featureVideoPoster: asset("deu-lagoa/hero-lagoa-hq.jpg"),
     instagramHandle: "@deulagoauruau",
     instagramUrl: "https://www.instagram.com/deulagoauruau/",
   },
@@ -38,21 +40,21 @@ export const seedContent = {
       eyebrow: "fonte publica",
       title: "O principal ativo visual confirmado e a lagoa.",
       copy: "A bio oficial fala em vista encantadora da lagoa, e as imagens publicas reforcam essa leitura como centro da experiencia.",
-      image: "/deu-lagoa/hero-lagoa-hq.jpg",
+      image: asset("deu-lagoa/hero-lagoa-hq.jpg"),
     },
     {
       id: "story-2",
       eyebrow: "identidade",
       title: "Hotel e restaurante aparecem juntos na apresentacao da marca.",
       copy: "Isso permite um site institucional mais forte, com reserva assistida e uma narrativa que integra hospedagem e mesa sem inventar detalhes operacionais.",
-      image: "/deu-lagoa/resto-noite-hq.jpg",
+      image: asset("deu-lagoa/resto-noite-hq.jpg"),
     },
     {
       id: "story-3",
       eyebrow: "homologacao",
       title: "Tarifas, tipos de quarto e politicas ficam no painel ate validacao da operacao.",
       copy: "A interface publica evita prometer informacoes que nao foram confirmadas e o painel segue pronto para receber o inventario oficial.",
-      image: "/deu-lagoa/suite-casal-hq.jpg",
+      image: asset("deu-lagoa/suite-casal-hq.jpg"),
     },
   ],
   suites: [
@@ -64,8 +66,12 @@ export const seedContent = {
       size: "",
       guests: 0,
       beds: "",
-      image: "/deu-lagoa/suite-casal-hq.jpg",
-      gallery: ["/deu-lagoa/suite-casal-hq.jpg", "/deu-lagoa/hero-lagoa-hq.jpg", "/deu-lagoa/resto-noite-hq.jpg"],
+      image: asset("deu-lagoa/suite-casal-hq.jpg"),
+      gallery: [
+        asset("deu-lagoa/suite-casal-hq.jpg"),
+        asset("deu-lagoa/hero-lagoa-hq.jpg"),
+        asset("deu-lagoa/resto-noite-hq.jpg"),
+      ],
       summary: "O perfil oficial confirma hospedagem na Deu Lagoa, mas o inventario publico detalhado nao estava disponivel sem login ou contato direto.",
       details:
         "Esta categoria funciona como estrutura institucional para a vitrine. A pousada pode substituir por suites reais, tarifas e regras oficiais diretamente no painel vendedor.",
@@ -79,8 +85,12 @@ export const seedContent = {
       size: "",
       guests: 0,
       beds: "",
-      image: "/deu-lagoa/resto-noite-hq.jpg",
-      gallery: ["/deu-lagoa/resto-noite-hq.jpg", "/deu-lagoa/hero-lagoa-hq.jpg", "/deu-lagoa/familia-hq.jpg"],
+      image: asset("deu-lagoa/resto-noite-hq.jpg"),
+      gallery: [
+        asset("deu-lagoa/resto-noite-hq.jpg"),
+        asset("deu-lagoa/hero-lagoa-hq.jpg"),
+        asset("deu-lagoa/familia-hq.jpg"),
+      ],
       summary: "A comunicacao publica posiciona hotel e restaurante como parte da mesma identidade.",
       details:
         "A operacao pode transformar este bloco em pacote, experiencia ou categoria real assim que houver dados homologados sobre consumo, inclusoes e disponibilidade.",
@@ -190,32 +200,32 @@ export const seedContent = {
   instagramPosts: [
     {
       id: "ig-1",
-      image: "/deu-lagoa/hero-lagoa-hq.jpg",
+      image: asset("deu-lagoa/hero-lagoa-hq.jpg"),
       caption: "Imagem publica usada para reforcar a lagoa como eixo visual da marca.",
     },
     {
       id: "ig-2",
-      image: "/deu-lagoa/resto-noite-hq.jpg",
+      image: asset("deu-lagoa/resto-noite-hq.jpg"),
       caption: "Imagem publica alinhada ao posicionamento de hotel e restaurante.",
     },
     {
       id: "ig-3",
-      image: "/deu-lagoa/suite-casal-hq.jpg",
+      image: asset("deu-lagoa/suite-casal-hq.jpg"),
       caption: "Imagem publica de ambiente de hospedagem, sem inventario detalhado associado.",
     },
     {
       id: "ig-4",
-      image: "/deu-lagoa/familia-hq.jpg",
+      image: asset("deu-lagoa/familia-hq.jpg"),
       caption: "Imagem publica de convivencia usada para sustentar a leitura de experiencia e conforto.",
     },
     {
       id: "ig-5",
-      image: "/deu-lagoa/inauguracao-hq.jpg",
+      image: asset("deu-lagoa/inauguracao-hq.jpg"),
       caption: "Imagem publica institucional reaproveitada como material de marca.",
     },
     {
       id: "ig-6",
-      image: "/deu-lagoa/lagoa.jpg",
+      image: asset("deu-lagoa/lagoa.jpg"),
       caption: "Imagem publica de paisagem usada para reforcar a narrativa territorial.",
     },
   ],
