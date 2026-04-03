@@ -15,6 +15,12 @@ npm run dev
 npm run build
 ```
 
+## Build para GitHub Pages pela raiz do repositorio
+
+```bash
+npm run build:site
+```
+
 ## Rotas
 
 - comprador: `#/comprador`
