@@ -29,21 +29,10 @@
         "sameAs": ["https://www.instagram.com/deulagoauruau/"]
       }
     </script>
-    <script>
-      window.__IS_GITHUB_PAGES__ = location.hostname.endsWith("github.io");
-      if (window.__IS_GITHUB_PAGES__ && !location.pathname.includes("/site/")) {
-        const target = new URL("./site/", location.href);
-        location.replace(target.href);
-      }
-    </script>
   </head>
   <body>
     <div id="app"></div>
-    <script type="module">
-      if (!window.__IS_GITHUB_PAGES__) {
-        import("/src/main.js");
-      }
-    </script>
+    <script type="module" src="/src/main.js"></script>
     <noscript>
       <p>Este site precisa de JavaScript habilitado.</p>
     </noscript>
