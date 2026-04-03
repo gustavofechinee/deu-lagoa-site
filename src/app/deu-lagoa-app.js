@@ -92,6 +92,7 @@ function tplBuyerPage() {
     ${tplBuyerHeader()}
     <main class="page-main">
       ${tplHero(resort, activeSuite, summary)}
+      ${tplReservationStudio(resort, activeSuite, summary)}
       ${tplBrandStory(resort)}
       ${tplStats()}
       ${tplBookingFlow()}
@@ -106,6 +107,7 @@ function tplBuyerPage() {
       ${tplFaq()}
       ${tplFinalCta(resort, activeSuite, summary)}
     </main>
+    ${tplMobileDock()}
     ${tplSiteFooter()}
   `;
 }
@@ -142,9 +144,6 @@ function tplBuyerHeader() {
 }
 
 function tplHero(resort, activeSuite, summary) {
-  const availability = getBookingAvailability(activeSuite);
-  const blockedWindows = getUpcomingBlockedWindows(state.content, activeSuite.slug, 3);
-  const contactPending = !resort.reservationWhatsapp && !resort.reservationEmail;
   return `
     <section class="hero-section" id="topo">
       <div class="hero-backdrop" style="background-image: linear-gradient(120deg, rgba(6, 15, 20, 0.72), rgba(5, 12, 18, 0.34)), url('${h(resort.heroImage)}');"></div>
@@ -162,82 +161,107 @@ function tplHero(resort, activeSuite, summary) {
           <a class="button-primary" href="#suites">Explorar suites</a>
           <a class="button-secondary" href="${h(getPrimaryContactHref())}" target="_blank" rel="noreferrer noopener">${h(getPrimaryContactLabel())}</a>
         </div>
-      </div>
-      <aside class="booking-panel reveal" id="reserva">
-        <div class="booking-panel-head">
-          <p class="kicker">reserva assistida</p>
-          <h2>Monte sua estadia</h2>
+        <div class="hero-proof-strip">
+          <span>fonte publica auditada</span>
+          <span>reserva assistida</span>
+          <span>painel vendedor separado</span>
         </div>
-        <form class="booking-form" id="booking-form">
-          <label class="field-block">
-            <span>Suite</span>
-            <select name="suite">
-              ${state.content.suites
-                .map((suite) => `<option value="${h(suite.slug)}" ${suite.slug === state.booking.suite ? "selected" : ""}>${h(suite.name)}</option>`)
-                .join("")}
-            </select>
-          </label>
-          <div class="field-grid">
-            <label class="field-block"><span>Check-in</span><input type="date" name="checkin" value="${h(state.booking.checkin)}" /></label>
-            <label class="field-block"><span>Check-out</span><input type="date" name="checkout" value="${h(state.booking.checkout)}" /></label>
+      </div>
+    </section>
+  `;
+}
+
+function tplReservationStudio(resort, activeSuite, summary) {
+  const availability = getBookingAvailability(activeSuite);
+  const blockedWindows = getUpcomingBlockedWindows(state.content, activeSuite.slug, 3);
+  const contactPending = !resort.reservationWhatsapp && !resort.reservationEmail;
+  return `
+    <section class="reservation-studio section-shell" id="reserva">
+      <div class="reservation-studio-shell">
+        <div class="reservation-studio-copy reveal">
+          <p class="kicker">reserva assistida</p>
+          <h2>Consulta de hospedagem com bloqueio de datas e triagem comercial.</h2>
+          <p>A vitrine publica apresenta a marca. A secao abaixo transforma interesse em pre-reserva, registra contato e impede conflito de agenda na mesma categoria cadastrada.</p>
+          <div class="reservation-side-image">
+            <img src="${h(activeSuite.image || resort.signatureImage)}" alt="${h(activeSuite.name)}" />
           </div>
-          <label class="field-block">
-            <span>Hospedes</span>
-            <select name="guests">
-              ${[1, 2, 3, 4, 5]
-                .map((guest) => `<option value="${guest}" ${Number(state.booking.guests) === guest ? "selected" : ""}>${guest} ${guest === 1 ? "hospede" : "hospedes"}</option>`)
-                .join("")}
-            </select>
-          </label>
-          <div class="field-grid">
-            <label class="field-block"><span>Seu nome</span><input name="guestName" value="${h(state.booking.guestName)}" placeholder="Nome do responsavel" /></label>
-            <label class="field-block"><span>Contato</span><input name="guestContact" value="${h(state.booking.guestContact)}" placeholder="WhatsApp ou telefone" /></label>
+        </div>
+        <aside class="booking-panel reveal">
+          <div class="booking-panel-head">
+            <p class="kicker">pre-reserva</p>
+            <h2>Monte sua estadia</h2>
           </div>
-          <label class="field-block"><span>E-mail</span><input type="email" name="guestEmail" value="${h(state.booking.guestEmail)}" placeholder="email@exemplo.com" /></label>
-          <label class="field-block"><span>Observacoes</span><textarea name="notes" placeholder="Horário de chegada, pacote, pedido especial...">${h(state.booking.notes)}</textarea></label>
-          <div class="booking-summary-card">
-            <div class="booking-brand">
-              <img src="${h(resort.profileImage)}" alt="${h(resort.name)}" />
-              <span>${h(resort.instagramHandle)}</span>
+          <form class="booking-form" id="booking-form">
+            <label class="field-block">
+              <span>Suite</span>
+              <select name="suite">
+                ${state.content.suites
+                  .map((suite) => `<option value="${h(suite.slug)}" ${suite.slug === state.booking.suite ? "selected" : ""}>${h(suite.name)}</option>`)
+                  .join("")}
+              </select>
+            </label>
+            <div class="field-grid">
+              <label class="field-block"><span>Check-in</span><input type="date" name="checkin" value="${h(state.booking.checkin)}" /></label>
+              <label class="field-block"><span>Check-out</span><input type="date" name="checkout" value="${h(state.booking.checkout)}" /></label>
             </div>
-            <div><small>categoria sugerida</small><strong>${h(activeSuite.name)}</strong></div>
-            <div><small>faixa tarifaria</small><strong>${h(getRateLabel(activeSuite.rate))}</strong></div>
-            <div><small>estimativa</small><strong>${h(getEstimateLabel(summary, activeSuite))}</strong></div>
-            <div class="availability-badge ${availability.available ? "available" : availability.status === "invalid" ? "pending" : "unavailable"}">
-              <small>${h(availability.label)}</small>
-              <strong>${h(availability.detail)}</strong>
+            <label class="field-block">
+              <span>Hospedes</span>
+              <select name="guests">
+                ${[1, 2, 3, 4, 5]
+                  .map((guest) => `<option value="${guest}" ${Number(state.booking.guests) === guest ? "selected" : ""}>${guest} ${guest === 1 ? "hospede" : "hospedes"}</option>`)
+                  .join("")}
+              </select>
+            </label>
+            <div class="field-grid">
+              <label class="field-block"><span>Seu nome</span><input name="guestName" value="${h(state.booking.guestName)}" placeholder="Nome do responsavel" /></label>
+              <label class="field-block"><span>Contato</span><input name="guestContact" value="${h(state.booking.guestContact)}" placeholder="WhatsApp ou telefone" /></label>
             </div>
-            ${
-              blockedWindows.length
-                ? `
-                  <div class="blocked-window-list">
-                    <small>janelas ja bloqueadas</small>
-                    ${blockedWindows
-                      .map((reservation) => `<span>${h(formatDateRange(reservation.checkin, reservation.checkout))}</span>`)
-                      .join("")}
-                  </div>
-                `
-                : `
-                  <div class="blocked-window-list">
-                    <small>agenda atual</small>
-                    <span>Sem bloqueios cadastrados para esta suite.</span>
-                  </div>
-                `
-            }
-            ${
-              contactPending
-                ? `
-                  <div class="booking-operational-note">
-                    <small>canal oficial em homologacao</small>
-                    <strong>O envio segue para o Instagram oficial ate a pousada validar WhatsApp e e-mail no painel.</strong>
-                  </div>
-                `
-                : ""
-            }
-          </div>
-          <button type="submit" class="booking-submit">Registrar pre-reserva</button>
-        </form>
-      </aside>
+            <label class="field-block"><span>E-mail</span><input type="email" name="guestEmail" value="${h(state.booking.guestEmail)}" placeholder="email@exemplo.com" /></label>
+            <label class="field-block"><span>Observacoes</span><textarea name="notes" placeholder="Horário de chegada, pacote, pedido especial...">${h(state.booking.notes)}</textarea></label>
+            <div class="booking-summary-card">
+              <div class="booking-brand">
+                <img src="${h(resort.profileImage)}" alt="${h(resort.name)}" />
+                <span>${h(resort.instagramHandle)}</span>
+              </div>
+              <div><small>categoria sugerida</small><strong>${h(activeSuite.name)}</strong></div>
+              <div><small>faixa tarifaria</small><strong>${h(getRateLabel(activeSuite.rate))}</strong></div>
+              <div><small>estimativa</small><strong>${h(getEstimateLabel(summary, activeSuite))}</strong></div>
+              <div class="availability-badge ${availability.available ? "available" : availability.status === "invalid" ? "pending" : "unavailable"}">
+                <small>${h(availability.label)}</small>
+                <strong>${h(availability.detail)}</strong>
+              </div>
+              ${
+                blockedWindows.length
+                  ? `
+                    <div class="blocked-window-list">
+                      <small>janelas ja bloqueadas</small>
+                      ${blockedWindows
+                        .map((reservation) => `<span>${h(formatDateRange(reservation.checkin, reservation.checkout))}</span>`)
+                        .join("")}
+                    </div>
+                  `
+                  : `
+                    <div class="blocked-window-list">
+                      <small>agenda atual</small>
+                      <span>Sem bloqueios cadastrados para esta suite.</span>
+                    </div>
+                  `
+              }
+              ${
+                contactPending
+                  ? `
+                    <div class="booking-operational-note">
+                      <small>canal oficial em homologacao</small>
+                      <strong>O envio segue para o Instagram oficial ate a pousada validar WhatsApp e e-mail no painel.</strong>
+                    </div>
+                  `
+                  : ""
+              }
+            </div>
+            <button type="submit" class="booking-submit">Registrar pre-reserva</button>
+          </form>
+        </aside>
+      </div>
     </section>
   `;
 }
@@ -555,6 +579,16 @@ function tplSiteFooter() {
         </div>
       </div>
     </footer>
+  `;
+}
+
+function tplMobileDock() {
+  const resort = state.content.resort;
+  return `
+    <div class="mobile-dock" aria-label="Acoes rapidas">
+      <a class="mobile-dock-link" href="#reserva">Reserva</a>
+      <a class="mobile-dock-link" href="${h(resort.instagramUrl)}" target="_blank" rel="noreferrer noopener">Instagram</a>
+    </div>
   `;
 }
 

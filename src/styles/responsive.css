@@ -1,6 +1,7 @@
 @media (max-width: 1120px) {
   .hero-section,
   .story-shell,
+  .reservation-studio-shell,
   .suite-layout,
   .suite-stage,
   .cinema-shell,
@@ -12,7 +13,7 @@
   }
 
   .hero-section {
-    min-height: auto;
+    min-height: calc(100svh - 1rem);
     padding-top: 8rem;
   }
 
@@ -138,7 +139,7 @@
   }
 
   .hero-section {
-    padding: 8rem 1rem 3rem;
+    padding: 8rem 1rem 7rem;
   }
 
   .hero-action-row,
@@ -160,6 +161,40 @@
     width: 100%;
   }
 
+  .hero-content {
+    max-width: none;
+  }
+
+  .hero-proof-strip {
+    gap: 0.55rem;
+  }
+
+  .hero-proof-strip span {
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+  }
+
+  .hero-lead {
+    font-size: 0.98rem;
+    line-height: 1.7;
+  }
+
+  .hero-meta-block {
+    min-width: 0;
+  }
+
+  .booking-panel {
+    padding: 1.15rem;
+  }
+
+  .reservation-side-image {
+    min-height: 260px;
+  }
+
+  .booking-panel-head h2 {
+    font-size: 2.2rem;
+  }
+
   .gallery-strip {
     grid-template-columns: 1fr 1fr;
   }
@@ -167,8 +202,12 @@
   .site-notice {
     left: 0.6rem;
     right: 0.6rem;
-    bottom: 0.6rem;
+    bottom: 5.4rem;
     max-width: none;
+  }
+
+  .mobile-dock {
+    display: flex;
   }
 }
 
