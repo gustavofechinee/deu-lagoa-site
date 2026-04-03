@@ -38,9 +38,6 @@ let noticeTimer = 0;
 init();
 
 function init() {
-  syncSelections();
-  if (!location.hash) location.hash = "/comprador";
-  render();
   app.addEventListener("click", onClick);
   app.addEventListener("input", onInput);
   app.addEventListener("change", onChange);
@@ -49,10 +46,13 @@ function init() {
   window.addEventListener("keydown", onKeydown);
   window.addEventListener("scroll", syncHeader, { passive: true });
   window.addEventListener("pointermove", updatePointerGlow, { passive: true });
+  if (normalizePublicRoute()) return;
+  syncSelections();
+  render();
 }
 
 function parseRoute() {
-  const clean = location.hash.replace(/^#/, "") || "/comprador";
+  const clean = location.hash.replace(/^#/, "") || "/hotel";
   const parts = clean.split("/").filter(Boolean);
   if (parts[0] === "vendedor") {
     return {
@@ -64,10 +64,20 @@ function parseRoute() {
 }
 
 function onRouteChange() {
+  if (normalizePublicRoute()) return;
   state.route = parseRoute();
   state.menuOpen = false;
   syncSelections();
   render();
+}
+
+function normalizePublicRoute() {
+  const clean = location.hash.replace(/^#/, "");
+  if (!clean || clean === "/" || clean === "/comprador") {
+    location.hash = "/hotel";
+    return true;
+  }
+  return false;
 }
 
 function render() {
@@ -96,7 +106,6 @@ function tplBuyerPage() {
       ${tplBrandStory(resort)}
       ${tplStats()}
       ${tplBookingFlow()}
-      ${tplAuditStrip()}
       ${tplSuites(activeSuite)}
       ${tplCinema(resort)}
       ${tplRituals()}
@@ -162,9 +171,9 @@ function tplHero(resort, activeSuite, summary) {
           <a class="button-secondary" href="${h(getPrimaryContactHref())}" target="_blank" rel="noreferrer noopener">${h(getPrimaryContactLabel())}</a>
         </div>
         <div class="hero-proof-strip">
-          <span>fonte publica auditada</span>
-          <span>reserva assistida</span>
-          <span>painel vendedor separado</span>
+          <span>hotel + resto</span>
+          <span>reserva direta</span>
+          <span>Uruau, Ceara</span>
         </div>
       </div>
     </section>
@@ -179,17 +188,17 @@ function tplReservationStudio(resort, activeSuite, summary) {
     <section class="reservation-studio section-shell" id="reserva">
       <div class="reservation-studio-shell">
         <div class="reservation-studio-copy reveal">
-          <p class="kicker">reserva assistida</p>
-          <h2>Consulta de hospedagem com bloqueio de datas e triagem comercial.</h2>
-          <p>A vitrine publica apresenta a marca. A secao abaixo transforma interesse em pre-reserva, registra contato e impede conflito de agenda na mesma categoria cadastrada.</p>
+          <p class="kicker">reserva direta</p>
+          <h2>Solicite sua estadia com confirmacao da equipe.</h2>
+          <p>Escolha o periodo, envie seus dados e receba o retorno com categoria, valores e disponibilidade para a data desejada.</p>
           <div class="reservation-side-image">
             <img src="${h(activeSuite.image || resort.signatureImage)}" alt="${h(activeSuite.name)}" />
           </div>
         </div>
         <aside class="booking-panel reveal">
           <div class="booking-panel-head">
-            <p class="kicker">pre-reserva</p>
-            <h2>Monte sua estadia</h2>
+            <p class="kicker">disponibilidade</p>
+            <h2>Planeje sua chegada</h2>
           </div>
           <form class="booking-form" id="booking-form">
             <label class="field-block">
@@ -251,14 +260,14 @@ function tplReservationStudio(resort, activeSuite, summary) {
                 contactPending
                   ? `
                     <div class="booking-operational-note">
-                      <small>canal oficial em homologacao</small>
-                      <strong>O envio segue para o Instagram oficial ate a pousada validar WhatsApp e e-mail no painel.</strong>
+                      <small>atendimento direto</small>
+                      <strong>Enquanto os demais canais sao atualizados, o contato segue pelo Instagram oficial da pousada.</strong>
                     </div>
                   `
                   : ""
               }
             </div>
-            <button type="submit" class="booking-submit">Registrar pre-reserva</button>
+            <button type="submit" class="booking-submit">Solicitar disponibilidade</button>
           </form>
         </aside>
       </div>
@@ -326,9 +335,9 @@ function tplBookingFlow() {
   return `
     <section class="ops-section section-shell" id="operacao-reserva">
       <div class="section-heading reveal">
-        <p class="kicker">reserva e operação</p>
-        <h2>Um fluxo mais seguro para vender a pousada sem gerar conflito de agenda.</h2>
-        <p>O comprador deixa a pré-reserva no site, o painel registra o lead e as datas passam a respeitar o status operacional definido pela equipe.</p>
+        <p class="kicker">reserva e atendimento</p>
+        <h2>Do primeiro contato a confirmacao da estadia.</h2>
+        <p>O pedido entra no painel, bloqueia datas em andamento e segue para a equipe concluir a reserva sem conflito de agenda.</p>
       </div>
       <div class="ops-grid">
         ${state.content.ops.bookingFlow
@@ -347,33 +356,15 @@ function tplBookingFlow() {
   `;
 }
 
-function tplAuditStrip() {
-  const verification = state.content.verification;
-  return `
-    <section class="audit-strip section-shell">
-      <div class="audit-strip-shell reveal">
-        <div class="audit-strip-copy">
-          <p class="kicker">auditoria publica</p>
-          <h2>Conteudo revisado para nao vender dado inventado.</h2>
-          <p>Informacoes publicas verificadas em ${h(verification.checkedAt)}. O restante ficou no painel vendedor como dado operacional a ser homologado pela pousada.</p>
-        </div>
-        <div class="audit-strip-tags">
-          ${verification.verifiedFacts.map((fact) => `<span>${h(fact.sourceLabel)}</span>`).join("")}
-        </div>
-      </div>
-    </section>
-  `;
-}
-
 function tplSuites(activeSuite) {
   const suiteFacts = getSuiteFacts(activeSuite);
   const hasAmenities = Array.isArray(activeSuite.amenities) && activeSuite.amenities.length > 0;
   return `
     <section class="suite-section section-shell" id="suites">
       <div class="section-heading reveal">
-        <p class="kicker">hospedagem e ambientes</p>
-        <h2>Vitrine publica com imagens reais e catalogo pronto para receber os dados oficiais da pousada.</h2>
-        <p>Enquanto o inventario final nao e homologado pela operacao, a area abaixo trabalha com uma categoria institucional e direciona a pessoa para consulta direta de disponibilidade.</p>
+        <p class="kicker">hospedagem</p>
+        <h2>Opcoes de reserva para montar a estadia no ritmo da Deu Lagoa.</h2>
+        <p>Cada pedido pode ser alinhado com acomodacao, mesa e periodo desejado antes da confirmacao final.</p>
       </div>
       <div class="suite-layout">
         <div class="suite-list reveal">
@@ -434,9 +425,9 @@ function tplRituals() {
     <section class="ritual-section section-shell" id="rituais">
       <div class="ritual-layout">
         <div class="ritual-copy reveal">
-          <p class="kicker">leitura institucional</p>
-          <h2>O site agora diferencia claramente fato publico, conteudo operacional e cadastro pendente.</h2>
-          <p>Isso evita apresentar como real o que ainda nao foi validado diretamente com a pousada e deixa a interface pronta para receber inventario oficial, contatos e politicas comerciais.</p>
+          <p class="kicker">a experiencia</p>
+          <h2>Uma hospedagem guiada por agua, mesa e permanencia.</h2>
+          <p>A casa combina paisagem, restaurante e atendimento direto para transformar a reserva em um plano completo de chegada.</p>
           <div class="policy-list">${state.content.policies.map((item) => `<span>${h(item)}</span>`).join("")}</div>
         </div>
         <div class="ritual-cards reveal">
@@ -451,8 +442,8 @@ function tplExperienceGrid() {
   return `
     <section class="experience-section section-shell" id="experiencias">
       <div class="section-heading reveal">
-        <p class="kicker">sinais publicos da marca</p>
-        <h2>O que a comunicacao publica confirma hoje sobre a Deu Lagoa.</h2>
+        <p class="kicker">a estadia</p>
+        <h2>O que define a experiencia na Deu Lagoa.</h2>
       </div>
       <div class="experience-grid">
         ${state.content.experiences
@@ -498,8 +489,8 @@ function tplStayTimeline() {
   return `
     <section class="timeline-section section-shell">
       <div class="section-heading reveal">
-        <p class="kicker">fonte publica</p>
-        <h2>Pontos que aparecem de forma direta no perfil oficial da marca.</h2>
+        <p class="kicker">ritmo da casa</p>
+        <h2>Uma jornada pensada para chegar, ficar e prolongar o dia.</h2>
       </div>
       <div class="timeline-grid">
         ${state.content.itinerary.map((item) => `<article class="timeline-card reveal"><small>${h(item.time)}</small><h3>${h(item.title)}</h3><p>${h(item.description)}</p></article>`).join("")}
@@ -512,8 +503,8 @@ function tplTestimonials() {
   return `
     <section class="testimonial-section section-shell">
       <div class="section-heading reveal">
-        <p class="kicker">mensagem publica</p>
-        <h2>Frases curtas baseadas no posicionamento que hoje pode ser comprovado.</h2>
+        <p class="kicker">assinatura</p>
+        <h2>Frases que resumem o tom da casa.</h2>
       </div>
       <div class="testimonial-grid">
         ${state.content.testimonials.map((item) => `<article class="testimonial-card reveal"><p>${h(item.quote)}</p><strong>${h(item.author)}</strong></article>`).join("")}
@@ -546,13 +537,13 @@ function tplFinalCta(resort, activeSuite, summary) {
     <section class="final-cta section-shell">
       <div class="final-cta-card reveal">
         <div class="final-cta-copy">
-          <p class="kicker">reserva e contato</p>
-          <h2>Se a data estiver definida, o sistema registra a pre-reserva e encaminha o atendimento para confirmacao final.</h2>
+          <p class="kicker">reserva e atendimento</p>
+          <h2>Quando a data fizer sentido, a equipe assume o atendimento e fecha os detalhes da estadia.</h2>
           <p>${h(resort.tagline)}</p>
           <div class="contact-rail">${contactLinks.map((item) => `<a class="contact-link" href="${h(item.href)}" ${item.external ? 'target="_blank" rel="noreferrer noopener"' : ""}>${h(item.label)}</a>`).join("")}</div>
         </div>
         <div class="final-cta-summary">
-          <small>pre-reserva</small>
+          <small>solicitacao</small>
           <strong>${h(activeSuite.name)}</strong>
           <span>${h(formatDateLabel(state.booking.checkin))} - ${h(formatDateLabel(state.booking.checkout))}</span>
           <span>${h(formatGuests(state.booking.guests))}</span>
@@ -565,7 +556,6 @@ function tplFinalCta(resort, activeSuite, summary) {
 
 function tplSiteFooter() {
   const resort = state.content.resort;
-  const verification = state.content.verification;
   return `
     <footer class="site-footer section-shell">
       <div class="site-footer-shell">
@@ -574,7 +564,7 @@ function tplSiteFooter() {
           <p>${h(resort.location)}</p>
         </div>
         <div class="site-footer-meta">
-          <span>Auditoria publica: ${h(verification.checkedAt)}</span>
+          <span>Reservas sob consulta direta</span>
           <a href="${h(resort.instagramUrl)}" target="_blank" rel="noreferrer noopener">${h(resort.instagramHandle)}</a>
         </div>
       </div>
@@ -601,7 +591,7 @@ function tplSellerPage() {
       <section class="seller-kpis reveal">
         <article><strong>${state.content.suites.length}</strong><span>suites cadastradas</span></article>
         <article><strong>${metrics.activeCount}</strong><span>reservas bloqueando agenda</span></article>
-        <article><strong>${metrics.pendingCount}</strong><span>pre-reservas pendentes</span></article>
+        <article><strong>${metrics.pendingCount}</strong><span>solicitacoes pendentes</span></article>
         <article><strong>${h(getAverageRateLabel())}</strong><span>faixa media cadastrada</span></article>
         <article><strong>${metrics.occupancyRate}%</strong><span>ocupacao projetada em 90 dias</span></article>
         <article><strong>${h(state.content.resort.location)}</strong><span>operacao atual</span></article>
@@ -625,7 +615,7 @@ function tplSellerPage() {
 function tplSellerHeader() {
   return `
     <header class="site-header seller-header ${state.menuOpen ? "menu-open" : ""}">
-      <a class="brand-lockup" href="#/comprador">
+      <a class="brand-lockup" href="#/hotel">
         <span class="brand-orb"></span>
         <span class="brand-copy"><strong>${h(state.content.resort.name)}</strong><small>painel do vendedor</small></span>
       </a>
@@ -638,7 +628,7 @@ function tplSellerHeader() {
         <a class="${state.route.tab === "config" ? "active" : ""}" href="#/vendedor/config">Configuracoes</a>
         <a class="${state.route.tab === "operacao" ? "active" : ""}" href="#/vendedor/operacao">Operacao</a>
       </nav>
-      <div class="header-actions"><a class="header-subtle" href="#/comprador">Ver comprador</a><button type="button" class="header-button seller-logout" data-action="logout-seller">Sair</button></div>
+      <div class="header-actions"><a class="header-subtle" href="#/hotel">Ver site</a><button type="button" class="header-button seller-logout" data-action="logout-seller">Sair</button></div>
     </header>
   `;
 }
@@ -649,7 +639,7 @@ function tplSellerLogin() {
       <section class="seller-login-card reveal">
         <p class="kicker">area do vendedor</p>
         <h1>Painel da pousada</h1>
-        <p>Edite suites, experiências, reservas, mídia e configurações sem misturar a operação com a vitrine do comprador.</p>
+        <p>Edite suites, experiencias, reservas, midia e configuracoes sem misturar a operacao com o site institucional.</p>
         <form id="seller-login-form" class="seller-login-form">
           <label class="field-block"><span>Codigo de acesso</span><input type="password" name="sellerCode" placeholder="Digite o codigo do vendedor" required /></label>
           <button type="submit" class="booking-submit">Entrar no painel</button>
@@ -665,7 +655,7 @@ function tplSellerHeroStrip(metrics) {
       <article>
         <small>reservas</small>
         <strong>${metrics.reservationCount}</strong>
-        <p>Total registrado no sistema demo.</p>
+        <p>Total registrado no painel da pousada.</p>
       </article>
       <article>
         <small>stack</small>
@@ -775,7 +765,7 @@ function tplSellerReservations() {
                     return `<button type="button" class="seller-card ${reservation.id === state.seller.reservationEditId ? "active" : ""}" data-edit-reservation="${h(reservation.id)}"><div><strong>${h(reservation.guestName || "Sem nome")}</strong><span>${h(suite?.name || reservation.suiteSlug)}</span></div><small>${h(formatReservationStatus(reservation.status))}</small></button>`;
                   })
                   .join("")
-              : `<article class="seller-empty-state"><strong>Sem reservas ainda</strong><p>A primeira pre-reserva criada na vitrine aparecera aqui com bloqueio de datas e status operacional.</p></article>`
+              : `<article class="seller-empty-state"><strong>Sem reservas ainda</strong><p>A primeira solicitacao de disponibilidade criada no site aparecera aqui com bloqueio de datas e status operacional.</p></article>`
           }
         </div>
       </article>
@@ -825,7 +815,7 @@ function tplSellerOperations() {
   return `
     <section class="seller-stack reveal">
       <article class="seller-panel seller-panel-wide">
-        <div class="seller-panel-head"><div><small>validacao publica</small><h2>Fontes e dados confiaveis</h2></div></div>
+        <div class="seller-panel-head"><div><small>fontes institucionais</small><h2>Referencias e dados confiaveis</h2></div></div>
         <div class="ops-grid">
           ${verification.verifiedFacts
             .map(
@@ -840,7 +830,7 @@ function tplSellerOperations() {
             .join("")}
         </div>
         <div class="pending-validation">
-          <small>pendente de validacao direta</small>
+          <small>pendente de confirmacao direta</small>
           <div class="policy-list">${verification.pendingValidation.map((item) => `<span>${h(item)}</span>`).join("")}</div>
         </div>
       </article>
@@ -913,10 +903,10 @@ function tplSellerConfig() {
   return `
     <section class="seller-grid reveal">
       <article class="seller-panel seller-panel-form seller-panel-wide">
-        <div class="seller-panel-head"><div><small>institucional</small><h2>Configuracoes da pousada</h2></div><button type="button" class="seller-link-button" data-action="reset-content">Restaurar demo</button></div>
+        <div class="seller-panel-head"><div><small>institucional</small><h2>Configuracoes da pousada</h2></div><button type="button" class="seller-link-button" data-action="reset-content">Restaurar padrao</button></div>
         <div class="config-note">
           <small>contatos oficiais</small>
-          <p>Telefone, WhatsApp e e-mail abaixo sao campos operacionais. Eles nao foram marcados como publicamente validados na seed para evitar prometer um dado nao conferido.</p>
+          <p>Telefone, WhatsApp e e-mail abaixo sao campos operacionais. Preencha os canais oficiais da pousada para refletir o atendimento real no site.</p>
         </div>
         <form class="seller-form" id="seller-config-form">
           <div class="seller-two-col"><label class="field-block"><span>Nome da pousada</span><input name="name" value="${h(resort.name)}" required /></label><label class="field-block"><span>Localizacao</span><input name="location" value="${h(resort.location)}" required /></label></div>
@@ -1050,7 +1040,7 @@ function getBookingAvailability(suite = getActiveSuite()) {
     status: "available",
     available: true,
     label: "disponibilidade preliminar",
-    detail: "Livre para registrar pre-reserva e seguir para confirmacao.",
+    detail: "Livre para receber a solicitacao e seguir para confirmacao.",
   };
 }
 
@@ -1249,7 +1239,7 @@ function onClick(event) {
   if (actionName === "reset-content") {
     state.content = resetContent();
     syncSelections();
-    setNotice("Conteudo demo restaurado no painel e na area do comprador.");
+    setNotice("Conteudo padrao restaurado no painel e no site.");
   }
 }
 
@@ -1286,7 +1276,7 @@ function onSubmit(event) {
       return;
     }
     if (!String(state.booking.guestName || "").trim() || !String(state.booking.guestContact || "").trim()) {
-      setNotice("Preencha nome e contato para registrar a pre-reserva.");
+      setNotice("Preencha nome e contato para solicitar disponibilidade.");
       return;
     }
     if (
@@ -1321,7 +1311,7 @@ function onSubmit(event) {
     state.seller.reservationEditId = reservation.id;
     persistContent();
     window.open(buildReservationUrl(getActiveSuite(), summary, reservation), "_blank", "noopener,noreferrer");
-    setNotice(`Pre-reserva registrada para ${getActiveSuite().name}. As datas agora aparecem bloqueadas como pendentes.`);
+    setNotice(`Solicitacao registrada para ${getActiveSuite().name}. As datas agora aparecem bloqueadas como pendentes.`);
     return;
   }
 
@@ -1534,7 +1524,7 @@ function deleteSuite(slug) {
   }
   state.content.suites = state.content.suites.filter((suite) => suite.slug !== slug);
   persistContent();
-  setNotice("Suite removida do painel e da area do comprador.");
+  setNotice("Suite removida do painel e do site.");
 }
 
 function deleteExperience(id) {
@@ -1563,7 +1553,7 @@ function persistContent() {
   state.content.meta = {
     ...(state.content.meta || {}),
     updatedAt: new Date().toISOString(),
-    persistence: "localStorage-demo",
+    persistence: "localStorage",
   };
   writeContent(state.content);
   syncSelections();
@@ -1613,7 +1603,7 @@ function buildReservationUrl(suite, summary, reservation) {
   const resort = state.content.resort;
   const message = [
     `Ola, equipe ${resort.name}.`,
-    `Registrei uma pre-reserva pelo site.`,
+    `Registrei um pedido de disponibilidade pelo site.`,
     ``,
     `Hospede: ${reservation?.guestName || state.booking.guestName}`,
     `Contato: ${reservation?.guestContact || state.booking.guestContact}`,
@@ -1632,7 +1622,7 @@ function buildReservationUrl(suite, summary, reservation) {
     return `https://wa.me/${resort.reservationWhatsapp}?text=${encodeURIComponent(message)}`;
   }
   if (resort.reservationEmail) {
-    return `mailto:${resort.reservationEmail}?subject=${encodeURIComponent(`Pre-reserva | ${suite.name}`)}&body=${encodeURIComponent(message)}`;
+    return `mailto:${resort.reservationEmail}?subject=${encodeURIComponent(`Solicitacao | ${suite.name}`)}&body=${encodeURIComponent(message)}`;
   }
   return resort.instagramUrl;
 }

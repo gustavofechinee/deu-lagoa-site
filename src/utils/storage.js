@@ -1,6 +1,6 @@
 import { seedContent } from "../data/deu-lagoa-content.js";
 
-const KEY = "deu_lagoa_content_v1";
+const KEY = "deu_lagoa_content_v2";
 
 export function ensureContent() {
   const current = readContent();
@@ -54,7 +54,7 @@ function mergeContent(seed, current) {
   next.reservationSettings = mergeDeep(next.reservationSettings, source.reservationSettings);
   next.meta = {
     updatedAt: source?.meta?.updatedAt || new Date().toISOString(),
-    persistence: "localStorage-demo",
+    persistence: "localStorage",
   };
   next.version = seed.version;
 
