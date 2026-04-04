@@ -156,19 +156,21 @@ function tplBuyerHeader() {
 
 function tplHero(resort, activeSuite, summary) {
   return `
-    <section class="hero-section ${resort.featureVideo ? "has-video-bg" : ""} ${state.introVisible ? "intro-playing" : "intro-complete"}" id="topo">
+    <section class="hero-section ${state.introVisible ? "intro-playing" : "intro-complete"}" id="topo">
       <div class="hero-backdrop" style="background-image: linear-gradient(120deg, rgba(6, 15, 20, 0.72), rgba(5, 12, 18, 0.34)), url('${h(resort.heroImage)}');">
-        ${
-          resort.featureVideo
-            ? `
-              <video class="hero-video" data-hero-video="1" autoplay muted loop playsinline preload="auto" poster="${h(resort.featureVideoPoster || resort.heroImage)}">
-                <source src="${h(resort.featureVideo)}" type="video/mp4" />
-              </video>
-            `
-            : ""
-        }
       </div>
       <div class="hero-overlay"></div>
+      ${
+        state.introVisible
+          ? `
+            <div class="hero-intro-badge">
+              <small>${h(resort.seasonLabel)}</small>
+              <strong>${h(resort.name)}</strong>
+              <span>${h(resort.location)}</span>
+            </div>
+          `
+          : ""
+      }
       <div class="hero-grid">
         <div class="hero-content hero-intro-copy">
           <p class="kicker">${h(resort.seasonLabel)}</p>
@@ -996,14 +998,7 @@ function syncIntroState() {
   }
   if (!(state.route.name === "buyer" && state.introVisible)) return;
 
-  const heroVideo = app.querySelector("[data-hero-video='1']");
-  if (heroVideo instanceof HTMLVideoElement) {
-    heroVideo.play().catch(() => {});
-    introTimer = window.setTimeout(dismissIntro, 7200);
-    return;
-  }
-
-  introTimer = window.setTimeout(dismissIntro, 3600);
+  introTimer = window.setTimeout(dismissIntro, 1800);
 }
 
 function dismissIntro() {
@@ -1015,9 +1010,12 @@ function dismissIntro() {
   if (heroSection instanceof HTMLElement) {
     heroSection.classList.remove("intro-playing");
     heroSection.classList.add("intro-complete");
+    heroSection.classList.add("intro-settled");
   }
   const skipButton = app.querySelector(".intro-skip");
   if (skipButton instanceof HTMLElement) skipButton.remove();
+  const introBadge = app.querySelector(".hero-intro-badge");
+  if (introBadge instanceof HTMLElement) introBadge.remove();
   bindReveal();
   syncHeader();
 }
