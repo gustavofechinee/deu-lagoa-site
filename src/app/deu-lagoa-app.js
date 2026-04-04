@@ -107,7 +107,6 @@ function tplBuyerPage() {
   return `
     ${tplBuyerHeader()}
     <main class="page-main">
-      ${tplIntroOverlay(resort)}
       ${tplHero(resort, activeSuite, summary)}
       ${tplBrandStory(resort)}
       ${tplExperienceGrid()}
@@ -120,32 +119,6 @@ function tplBuyerPage() {
     </main>
     ${tplMobileDock()}
     ${tplSiteFooter()}
-  `;
-}
-
-function tplIntroOverlay(resort) {
-  if (!state.introVisible) return "";
-  return `
-    <div class="intro-overlay" data-intro-overlay="1" aria-label="Abertura do site">
-      <div class="intro-overlay-media">
-        ${
-          resort.featureVideo
-            ? `
-              <video class="intro-video" data-intro-video="1" autoplay muted playsinline preload="auto" poster="${h(resort.featureVideoPoster || resort.heroImage)}">
-                <source src="${h(resort.featureVideo)}" type="video/mp4" />
-              </video>
-            `
-            : `<img class="intro-image" src="${h(resort.heroImage)}" alt="${h(resort.name)}" />`
-        }
-      </div>
-      <div class="intro-overlay-gradient"></div>
-      <div class="intro-overlay-copy">
-        <p class="kicker">${h(resort.seasonLabel)}</p>
-        <strong>${h(resort.name)}</strong>
-        <span>${h(resort.location)}</span>
-      </div>
-      <button type="button" class="intro-skip" data-action="dismiss-intro">Pular</button>
-    </div>
   `;
 }
 
@@ -183,11 +156,21 @@ function tplBuyerHeader() {
 
 function tplHero(resort, activeSuite, summary) {
   return `
-    <section class="hero-section" id="topo">
-      <div class="hero-backdrop" style="background-image: linear-gradient(120deg, rgba(6, 15, 20, 0.72), rgba(5, 12, 18, 0.34)), url('${h(resort.heroImage)}');"></div>
+    <section class="hero-section ${resort.featureVideo ? "has-video-bg" : ""} ${state.introVisible ? "intro-playing" : "intro-complete"}" id="topo">
+      <div class="hero-backdrop" style="background-image: linear-gradient(120deg, rgba(6, 15, 20, 0.72), rgba(5, 12, 18, 0.34)), url('${h(resort.heroImage)}');">
+        ${
+          resort.featureVideo
+            ? `
+              <video class="hero-video" data-hero-video="1" autoplay muted loop playsinline preload="auto" poster="${h(resort.featureVideoPoster || resort.heroImage)}">
+                <source src="${h(resort.featureVideo)}" type="video/mp4" />
+              </video>
+            `
+            : ""
+        }
+      </div>
       <div class="hero-overlay"></div>
       <div class="hero-grid">
-        <div class="hero-content reveal">
+        <div class="hero-content hero-intro-copy">
           <p class="kicker">${h(resort.seasonLabel)}</p>
           <h1>${h(resort.heroTitle)}</h1>
           <p class="hero-lead">${h(resort.heroCopy)}</p>
@@ -201,7 +184,7 @@ function tplHero(resort, activeSuite, summary) {
             <span>Uruaú, Ceará</span>
           </div>
         </div>
-        <aside class="hero-aside reveal">
+        <aside class="hero-aside hero-intro-copy">
           <div class="hero-aside-block">
             <span>destino</span>
             <strong>${h(resort.location)}</strong>
@@ -222,10 +205,11 @@ function tplHero(resort, activeSuite, summary) {
           <a class="hero-aside-link" href="#instagram">Ver imagens da casa</a>
         </aside>
       </div>
-      <div class="hero-scroll-indicator">
+      <div class="hero-scroll-indicator hero-intro-copy">
         <span></span>
         <small>deslize para conhecer</small>
       </div>
+      ${state.introVisible ? `<button type="button" class="intro-skip" data-action="dismiss-intro">Pular</button>` : ""}
     </section>
   `;
 }
@@ -1012,21 +996,30 @@ function syncIntroState() {
   }
   if (!(state.route.name === "buyer" && state.introVisible)) return;
 
-  const introVideo = app.querySelector("[data-intro-video='1']");
-  if (introVideo instanceof HTMLVideoElement) {
-    introVideo.addEventListener("ended", dismissIntro, { once: true });
-    introTimer = window.setTimeout(dismissIntro, 6500);
+  const heroVideo = app.querySelector("[data-hero-video='1']");
+  if (heroVideo instanceof HTMLVideoElement) {
+    heroVideo.play().catch(() => {});
+    introTimer = window.setTimeout(dismissIntro, 7200);
     return;
   }
 
-  introTimer = window.setTimeout(dismissIntro, 3200);
+  introTimer = window.setTimeout(dismissIntro, 3600);
 }
 
 function dismissIntro() {
   if (!state.introVisible) return;
   state.introVisible = false;
   sessionStorage.setItem(INTRO_KEY, "1");
-  render();
+  document.body.classList.remove("intro-active");
+  const heroSection = app.querySelector(".hero-section");
+  if (heroSection instanceof HTMLElement) {
+    heroSection.classList.remove("intro-playing");
+    heroSection.classList.add("intro-complete");
+  }
+  const skipButton = app.querySelector(".intro-skip");
+  if (skipButton instanceof HTMLElement) skipButton.remove();
+  bindReveal();
+  syncHeader();
 }
 
 function tplSellerSuitePreview(suite) {
