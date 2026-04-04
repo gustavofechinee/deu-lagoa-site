@@ -102,17 +102,11 @@ function tplBuyerPage() {
     ${tplBuyerHeader()}
     <main class="page-main">
       ${tplHero(resort, activeSuite, summary)}
-      ${tplReservationStudio(resort, activeSuite, summary)}
       ${tplBrandStory(resort)}
-      ${tplStats()}
-      ${tplBookingFlow()}
       ${tplSuites(activeSuite)}
       ${tplCinema(resort)}
-      ${tplRituals()}
-      ${tplExperienceGrid()}
+      ${tplReservationStudio(resort, activeSuite, summary)}
       ${tplInstagram()}
-      ${tplStayTimeline()}
-      ${tplTestimonials()}
       ${tplFaq()}
       ${tplFinalCta(resort, activeSuite, summary)}
     </main>
@@ -137,16 +131,16 @@ function tplBuyerHeader() {
         <span></span>
       </button>
       <nav class="site-nav ${state.menuOpen ? "open" : ""}">
-        <a href="#historia">Historia</a>
-        <a href="#suites">Suites</a>
-        <a href="#video">Video</a>
-        <a href="#experiencias">Experiencias</a>
-        <a href="#instagram">Instagram</a>
-        <a href="#faq">FAQ</a>
+        <a href="#historia">A casa</a>
+        <a href="#suites">Estadia</a>
+        <a href="#reserva">Reserva</a>
+        <a href="#video">Vídeo</a>
+        <a href="#instagram">Galeria</a>
+        <a href="#contato">Contato</a>
       </nav>
       <div class="header-actions">
         <a class="header-subtle" href="${h(resort.instagramUrl)}" target="_blank" rel="noreferrer noopener">${h(resort.instagramHandle)}</a>
-        <a class="header-button" href="#reserva">Consultar reserva</a>
+        <a class="header-button" href="#reserva">Consultar disponibilidade</a>
       </div>
     </header>
   `;
@@ -157,24 +151,45 @@ function tplHero(resort, activeSuite, summary) {
     <section class="hero-section" id="topo">
       <div class="hero-backdrop" style="background-image: linear-gradient(120deg, rgba(6, 15, 20, 0.72), rgba(5, 12, 18, 0.34)), url('${h(resort.heroImage)}');"></div>
       <div class="hero-overlay"></div>
-      <div class="hero-content reveal">
-        <p class="kicker">${h(resort.seasonLabel)}</p>
-        <h1>${h(resort.heroTitle)}</h1>
-        <p class="hero-lead">${h(resort.heroCopy)}</p>
-        <div class="hero-meta-row">
-          <div class="hero-meta-block"><span>check-in</span><strong>${h(resort.checkIn)}</strong></div>
-          <div class="hero-meta-block"><span>check-out</span><strong>${h(resort.checkOut)}</strong></div>
-          <div class="hero-meta-block"><span>localizacao</span><strong>${h(resort.location)}</strong></div>
+      <div class="hero-grid">
+        <div class="hero-content reveal">
+          <p class="kicker">${h(resort.seasonLabel)}</p>
+          <h1>${h(resort.heroTitle)}</h1>
+          <p class="hero-lead">${h(resort.heroCopy)}</p>
+          <div class="hero-action-row">
+            <a class="button-primary" href="#reserva">Consultar disponibilidade</a>
+            <a class="button-secondary" href="${h(getPrimaryContactHref())}" target="_blank" rel="noreferrer noopener">${h(getPrimaryContactLabel())}</a>
+          </div>
+          <div class="hero-proof-strip">
+            <span>pousada + restô</span>
+            <span>reserva direta</span>
+            <span>Uruaú, Ceará</span>
+          </div>
         </div>
-        <div class="hero-action-row">
-          <a class="button-primary" href="#suites">Explorar suites</a>
-          <a class="button-secondary" href="${h(getPrimaryContactHref())}" target="_blank" rel="noreferrer noopener">${h(getPrimaryContactLabel())}</a>
-        </div>
-        <div class="hero-proof-strip">
-          <span>hotel + resto</span>
-          <span>reserva direta</span>
-          <span>Uruau, Ceara</span>
-        </div>
+        <aside class="hero-aside reveal">
+          <div class="hero-aside-block">
+            <span>destino</span>
+            <strong>${h(resort.location)}</strong>
+          </div>
+          <div class="hero-aside-block">
+            <span>check-in</span>
+            <strong>${h(resort.checkIn)}</strong>
+          </div>
+          <div class="hero-aside-block">
+            <span>check-out</span>
+            <strong>${h(resort.checkOut)}</strong>
+          </div>
+          <div class="hero-aside-block hero-aside-block-featured">
+            <span>estadia sugerida</span>
+            <strong>${h(activeSuite.name)}</strong>
+            <small>${h(getEstimateLabel(summary, activeSuite))}</small>
+          </div>
+          <a class="hero-aside-link" href="#instagram">Ver atmosfera da casa</a>
+        </aside>
+      </div>
+      <div class="hero-scroll-indicator">
+        <span></span>
+        <small>deslize para conhecer</small>
       </div>
     </section>
   `;
@@ -188,11 +203,25 @@ function tplReservationStudio(resort, activeSuite, summary) {
     <section class="reservation-studio section-shell" id="reserva">
       <div class="reservation-studio-shell">
         <div class="reservation-studio-copy reveal">
-          <p class="kicker">reserva direta</p>
-          <h2>Solicite sua estadia com confirmacao da equipe.</h2>
-          <p>Escolha o periodo, envie seus dados e receba o retorno com categoria, valores e disponibilidade para a data desejada.</p>
+          <p class="kicker">reservas</p>
+          <h2>Consulta direta com a equipe, sem ruído e com agenda protegida.</h2>
+          <p>Escolha as datas, envie seu contato e abra a consulta de disponibilidade. O período fica protegido enquanto a equipe retorna com categoria, valores e confirmação final.</p>
           <div class="reservation-side-image">
             <img src="${h(activeSuite.image || resort.signatureImage)}" alt="${h(activeSuite.name)}" />
+          </div>
+          <div class="reservation-notes">
+            <div>
+              <span>consulta principal</span>
+              <strong>${h(activeSuite.name)}</strong>
+            </div>
+            <div>
+              <span>estimativa</span>
+              <strong>${h(getEstimateLabel(summary, activeSuite))}</strong>
+            </div>
+            <div>
+              <span>canal principal</span>
+              <strong>${h(getPrimaryContactLabel())}</strong>
+            </div>
           </div>
         </div>
         <aside class="booking-panel reveal">
@@ -202,7 +231,7 @@ function tplReservationStudio(resort, activeSuite, summary) {
           </div>
           <form class="booking-form" id="booking-form">
             <label class="field-block">
-              <span>Suite</span>
+              <span>Reserva</span>
               <select name="suite">
                 ${state.content.suites
                   .map((suite) => `<option value="${h(suite.slug)}" ${suite.slug === state.booking.suite ? "selected" : ""}>${h(suite.name)}</option>`)
@@ -214,10 +243,10 @@ function tplReservationStudio(resort, activeSuite, summary) {
               <label class="field-block"><span>Check-out</span><input type="date" name="checkout" value="${h(state.booking.checkout)}" /></label>
             </div>
             <label class="field-block">
-              <span>Hospedes</span>
+              <span>Hóspedes</span>
               <select name="guests">
                 ${[1, 2, 3, 4, 5]
-                  .map((guest) => `<option value="${guest}" ${Number(state.booking.guests) === guest ? "selected" : ""}>${guest} ${guest === 1 ? "hospede" : "hospedes"}</option>`)
+                  .map((guest) => `<option value="${guest}" ${Number(state.booking.guests) === guest ? "selected" : ""}>${guest} ${guest === 1 ? "hóspede" : "hóspedes"}</option>`)
                   .join("")}
               </select>
             </label>
@@ -226,14 +255,14 @@ function tplReservationStudio(resort, activeSuite, summary) {
               <label class="field-block"><span>Contato</span><input name="guestContact" value="${h(state.booking.guestContact)}" placeholder="WhatsApp ou telefone" /></label>
             </div>
             <label class="field-block"><span>E-mail</span><input type="email" name="guestEmail" value="${h(state.booking.guestEmail)}" placeholder="email@exemplo.com" /></label>
-            <label class="field-block"><span>Observacoes</span><textarea name="notes" placeholder="Horário de chegada, pacote, pedido especial...">${h(state.booking.notes)}</textarea></label>
+            <label class="field-block"><span>Observações</span><textarea name="notes" placeholder="Horário de chegada, pacote, pedido especial...">${h(state.booking.notes)}</textarea></label>
             <div class="booking-summary-card">
               <div class="booking-brand">
                 <img src="${h(resort.profileImage)}" alt="${h(resort.name)}" />
                 <span>${h(resort.instagramHandle)}</span>
               </div>
               <div><small>categoria sugerida</small><strong>${h(activeSuite.name)}</strong></div>
-              <div><small>faixa tarifaria</small><strong>${h(getRateLabel(activeSuite.rate))}</strong></div>
+              <div><small>faixa tarifária</small><strong>${h(getRateLabel(activeSuite.rate))}</strong></div>
               <div><small>estimativa</small><strong>${h(getEstimateLabel(summary, activeSuite))}</strong></div>
               <div class="availability-badge ${availability.available ? "available" : availability.status === "invalid" ? "pending" : "unavailable"}">
                 <small>${h(availability.label)}</small>
@@ -243,7 +272,7 @@ function tplReservationStudio(resort, activeSuite, summary) {
                 blockedWindows.length
                   ? `
                     <div class="blocked-window-list">
-                      <small>janelas ja bloqueadas</small>
+                      <small>janelas já bloqueadas</small>
                       ${blockedWindows
                         .map((reservation) => `<span>${h(formatDateRange(reservation.checkin, reservation.checkout))}</span>`)
                         .join("")}
@@ -252,7 +281,7 @@ function tplReservationStudio(resort, activeSuite, summary) {
                   : `
                     <div class="blocked-window-list">
                       <small>agenda atual</small>
-                      <span>Sem bloqueios cadastrados para esta suite.</span>
+                      <span>Sem bloqueios cadastrados para esta categoria.</span>
                     </div>
                   `
               }
@@ -261,13 +290,13 @@ function tplReservationStudio(resort, activeSuite, summary) {
                   ? `
                     <div class="booking-operational-note">
                       <small>atendimento direto</small>
-                      <strong>Enquanto os demais canais sao atualizados, o contato segue pelo Instagram oficial da pousada.</strong>
+                      <strong>Enquanto os demais canais são atualizados, o contato segue pelo Instagram oficial da pousada.</strong>
                     </div>
                   `
                   : ""
               }
             </div>
-            <button type="submit" class="booking-submit">Solicitar disponibilidade</button>
+            <button type="submit" class="booking-submit">Enviar consulta</button>
           </form>
         </aside>
       </div>
@@ -295,13 +324,13 @@ function tplBrandStory(resort) {
           </div>
         </article>
       </div>
-      <div class="story-grid">
+      <div class="story-note-grid">
         ${supportPanels
           .map(
             (panel) => `
-              <article class="story-card reveal">
-                <img src="${h(panel.image)}" alt="${h(panel.title)}" />
-                <div>
+              <article class="story-note reveal">
+                <div class="story-note-media"><img src="${h(panel.image)}" alt="${h(panel.title)}" /></div>
+                <div class="story-note-copy">
                   <small>${h(panel.eyebrow)}</small>
                   <strong>${h(panel.title)}</strong>
                   <p>${h(panel.copy)}</p>
@@ -317,8 +346,8 @@ function tplBrandStory(resort) {
 
 function tplStats() {
   return `
-    <section class="stats-section section-shell">
-      <div class="stats-grid">
+    <section class="stats-section">
+      <div class="stats-grid section-shell">
         ${state.content.stats
           .map((item) => {
             const rawValue = String(item.value);
@@ -363,8 +392,8 @@ function tplSuites(activeSuite) {
     <section class="suite-section section-shell" id="suites">
       <div class="section-heading reveal">
         <p class="kicker">hospedagem</p>
-        <h2>Opcoes de reserva para montar a estadia no ritmo da Deu Lagoa.</h2>
-        <p>Cada pedido pode ser alinhado com acomodacao, mesa e periodo desejado antes da confirmacao final.</p>
+        <h2>Formas de iniciar a estadia com mais clareza.</h2>
+        <p>Selecione a frente de atendimento mais adequada para o seu momento. A equipe confirma categoria, valores e agenda na resposta.</p>
       </div>
       <div class="suite-layout">
         <div class="suite-list reveal">
@@ -402,9 +431,9 @@ function tplCinema(resort) {
     <section class="cinema-section section-shell" id="video">
       <div class="cinema-shell reveal">
         <div class="cinema-copy">
-          <p class="kicker">video</p>
-          <h2>O ritmo da pousada fica melhor quando entra em movimento.</h2>
-          <p>O video reforca o que mais converte para a marca: agua, quartos, mesa e um tipo de fim de semana que parece muito mais simples de decidir.</p>
+          <p class="kicker">movimento</p>
+          <h2>Um recorte em movimento para sentir o ritmo da casa.</h2>
+          <p>Água, mesa, luz baixa e permanência aparecem melhor em sequência. O vídeo concentra a atmosfera que a pousada entrega ao vivo.</p>
           <div class="hero-action-row">
             <a class="button-primary" href="${h(getPrimaryContactHref())}" target="_blank" rel="noreferrer noopener">${h(getPrimaryContactLabel())}</a>
             <a class="button-secondary" href="${h(resort.instagramUrl)}" target="_blank" rel="noreferrer noopener">Ver reels da marca</a>
@@ -456,15 +485,16 @@ function tplExperienceGrid() {
 
 function tplInstagram() {
   const resort = state.content.resort;
+  const posts = state.content.instagramPosts.slice(0, 4);
   return `
     <section class="instagram-section section-shell" id="instagram">
       <div class="section-heading reveal">
-        <p class="kicker">instagram</p>
-        <h2>Uma parede visual para sustentar a marca entre reserva, menu e atmosfera.</h2>
-        <p>Os enquadramentos abaixo organizam o que a Deu Lagoa vende melhor: paisagem, mesa, quartos e datas que pedem permanencia.</p>
+        <p class="kicker">galeria</p>
+        <h2>Paisagem, quartos e mesa em uma seleção mais precisa.</h2>
+        <p>Os recortes abaixo reforçam a leitura da marca: beira de lagoa, estadia, restaurante e permanência sem pressa.</p>
       </div>
       <div class="instagram-grid">
-        ${state.content.instagramPosts
+        ${posts
           .map(
             (post, index) => `
               <article class="instagram-card instagram-card-${(index % 3) + 1} reveal">
@@ -517,8 +547,8 @@ function tplFaq() {
   return `
     <section class="faq-section section-shell" id="faq">
       <div class="section-heading reveal">
-        <p class="kicker">faq</p>
-        <h2>Informacoes objetivas para acelerar a decisao de reserva.</h2>
+        <p class="kicker">perguntas</p>
+        <h2>Informações objetivas para agilizar a reserva.</h2>
       </div>
       <div class="faq-stack reveal">
         ${state.content.faq
@@ -534,16 +564,16 @@ function tplFaq() {
 function tplFinalCta(resort, activeSuite, summary) {
   const contactLinks = getContactLinks();
   return `
-    <section class="final-cta section-shell">
-      <div class="final-cta-card reveal">
+    <section class="final-cta section-shell" id="contato">
+      <div class="final-cta-card reveal" style="background-image: linear-gradient(120deg, rgba(5, 12, 14, 0.44), rgba(5, 12, 14, 0.78)), url('${h(resort.signatureImage || activeSuite.image)}');">
         <div class="final-cta-copy">
-          <p class="kicker">reserva e atendimento</p>
-          <h2>Quando a data fizer sentido, a equipe assume o atendimento e fecha os detalhes da estadia.</h2>
+          <p class="kicker">contato</p>
+          <h2>Se a data fizer sentido para a sua viagem, a equipe conclui o restante por atendimento direto.</h2>
           <p>${h(resort.tagline)}</p>
           <div class="contact-rail">${contactLinks.map((item) => `<a class="contact-link" href="${h(item.href)}" ${item.external ? 'target="_blank" rel="noreferrer noopener"' : ""}>${h(item.label)}</a>`).join("")}</div>
         </div>
         <div class="final-cta-summary">
-          <small>solicitacao</small>
+          <small>consulta enviada</small>
           <strong>${h(activeSuite.name)}</strong>
           <span>${h(formatDateLabel(state.booking.checkin))} - ${h(formatDateLabel(state.booking.checkout))}</span>
           <span>${h(formatGuests(state.booking.guests))}</span>
@@ -564,7 +594,7 @@ function tplSiteFooter() {
           <p>${h(resort.location)}</p>
         </div>
         <div class="site-footer-meta">
-          <span>Reservas sob consulta direta</span>
+          <span>Reservas por atendimento direto</span>
           <a href="${h(resort.instagramUrl)}" target="_blank" rel="noreferrer noopener">${h(resort.instagramHandle)}</a>
         </div>
       </div>
@@ -576,7 +606,7 @@ function tplMobileDock() {
   const resort = state.content.resort;
   return `
     <div class="mobile-dock" aria-label="Acoes rapidas">
-      <a class="mobile-dock-link" href="#reserva">Reserva</a>
+      <a class="mobile-dock-link" href="#reserva">Reservar</a>
       <a class="mobile-dock-link" href="${h(resort.instagramUrl)}" target="_blank" rel="noreferrer noopener">Instagram</a>
     </div>
   `;
@@ -589,12 +619,12 @@ function tplSellerPage() {
     ${tplSellerHeader()}
     <main class="seller-main section-shell seller-shell">
       <section class="seller-kpis reveal">
-        <article><strong>${state.content.suites.length}</strong><span>suites cadastradas</span></article>
+        <article><strong>${state.content.suites.length}</strong><span>su\u00edtes cadastradas</span></article>
         <article><strong>${metrics.activeCount}</strong><span>reservas bloqueando agenda</span></article>
-        <article><strong>${metrics.pendingCount}</strong><span>solicitacoes pendentes</span></article>
-        <article><strong>${h(getAverageRateLabel())}</strong><span>faixa media cadastrada</span></article>
-        <article><strong>${metrics.occupancyRate}%</strong><span>ocupacao projetada em 90 dias</span></article>
-        <article><strong>${h(state.content.resort.location)}</strong><span>operacao atual</span></article>
+        <article><strong>${metrics.pendingCount}</strong><span>solicita\u00e7\u00f5es pendentes</span></article>
+        <article><strong>${h(getAverageRateLabel())}</strong><span>faixa m\u00e9dia cadastrada</span></article>
+        <article><strong>${metrics.occupancyRate}%</strong><span>ocupa\u00e7\u00e3o projetada em 90 dias</span></article>
+        <article><strong>${h(state.content.resort.location)}</strong><span>opera\u00e7\u00e3o atual</span></article>
       </section>
       ${tplSellerHeroStrip(metrics)}
       ${state.route.tab === "experiencias"
@@ -617,16 +647,16 @@ function tplSellerHeader() {
     <header class="site-header seller-header ${state.menuOpen ? "menu-open" : ""}">
       <a class="brand-lockup" href="#/hotel">
         <span class="brand-orb"></span>
-        <span class="brand-copy"><strong>${h(state.content.resort.name)}</strong><small>painel do vendedor</small></span>
+        <span class="brand-copy"><strong>${h(state.content.resort.name)}</strong><small>painel operacional</small></span>
       </a>
       <button type="button" class="menu-toggle" data-action="toggle-menu" aria-label="Abrir menu"><span></span><span></span></button>
       <nav class="site-nav ${state.menuOpen ? "open" : ""}">
         <a class="${state.route.tab === "suites" ? "active" : ""}" href="#/vendedor/suites">Suites</a>
-        <a class="${state.route.tab === "experiencias" ? "active" : ""}" href="#/vendedor/experiencias">Experiencias</a>
+        <a class="${state.route.tab === "experiencias" ? "active" : ""}" href="#/vendedor/experiencias">Experi\u00eancias</a>
         <a class="${state.route.tab === "reservas" ? "active" : ""}" href="#/vendedor/reservas">Reservas</a>
-        <a class="${state.route.tab === "midia" ? "active" : ""}" href="#/vendedor/midia">Midia</a>
-        <a class="${state.route.tab === "config" ? "active" : ""}" href="#/vendedor/config">Configuracoes</a>
-        <a class="${state.route.tab === "operacao" ? "active" : ""}" href="#/vendedor/operacao">Operacao</a>
+        <a class="${state.route.tab === "midia" ? "active" : ""}" href="#/vendedor/midia">M\u00eddia</a>
+        <a class="${state.route.tab === "config" ? "active" : ""}" href="#/vendedor/config">Configura\u00e7\u00f5es</a>
+        <a class="${state.route.tab === "operacao" ? "active" : ""}" href="#/vendedor/operacao">Opera\u00e7\u00e3o</a>
       </nav>
       <div class="header-actions"><a class="header-subtle" href="#/hotel">Ver site</a><button type="button" class="header-button seller-logout" data-action="logout-seller">Sair</button></div>
     </header>
@@ -637,9 +667,9 @@ function tplSellerLogin() {
   return `
     <main class="seller-login-shell section-shell">
       <section class="seller-login-card reveal">
-        <p class="kicker">area do vendedor</p>
+        <p class="kicker">\u00e1rea interna</p>
         <h1>Painel da pousada</h1>
-        <p>Edite suites, experiencias, reservas, midia e configuracoes sem misturar a operacao com o site institucional.</p>
+        <p>Edite su\u00edtes, experi\u00eancias, reservas, m\u00eddia e configura\u00e7\u00f5es sem misturar a opera\u00e7\u00e3o com o site institucional.</p>
         <form id="seller-login-form" class="seller-login-form">
           <label class="field-block"><span>Codigo de acesso</span><input type="password" name="sellerCode" placeholder="Digite o codigo do vendedor" required /></label>
           <button type="submit" class="booking-submit">Entrar no painel</button>
@@ -660,12 +690,12 @@ function tplSellerHeroStrip(metrics) {
       <article>
         <small>stack</small>
         <strong>Postgres-ready</strong>
-        <p>Schema e checklist de produção já incluídos no projeto.</p>
+        <p>Schema e checklist de produ\u00e7\u00e3o j\u00e1 inclu\u00eddos no projeto.</p>
       </article>
       <article>
-        <small>status público</small>
+        <small>status p\u00fablico</small>
         <strong>fontes validadas</strong>
-        <p>Instagram oficial e localização pública conferidos em 02/04/2026.</p>
+        <p>Instagram oficial e localiza\u00e7\u00e3o p\u00fablica conferidos em 02/04/2026.</p>
       </article>
     </section>
   `;
@@ -709,13 +739,13 @@ function tplSellerSuites() {
         <form class="seller-form" id="seller-suite-form">
           <input type="hidden" name="slug" value="${h(editSuite.slug || "")}" />
           <div class="seller-two-col"><label class="field-block"><span>Nome</span><input name="name" value="${h(editSuite.name || "")}" required /></label><label class="field-block"><span>Categoria</span><input name="category" value="${h(editSuite.category || "")}" required /></label></div>
-          <div class="seller-four-col"><label class="field-block"><span>Diaria</span><input type="number" min="0" name="rate" value="${h(editSuite.rate || 0)}" required /></label><label class="field-block"><span>Tamanho</span><input name="size" value="${h(editSuite.size || "")}" required /></label><label class="field-block"><span>Hospedes</span><input type="number" min="1" name="guests" value="${h(editSuite.guests || 2)}" required /></label><label class="field-block"><span>Camas</span><input name="beds" value="${h(editSuite.beds || "")}" required /></label></div>
-          <label class="field-block"><span>Imagem principal</span><input name="image" value="${h(editSuite.image || "")}" required /></label>
+          <div class="seller-four-col"><label class="field-block"><span>Diária</span><input type="number" min="0" name="rate" value="${h(editSuite.rate || 0)}" /></label><label class="field-block"><span>Tamanho</span><input name="size" value="${h(editSuite.size || "")}" /></label><label class="field-block"><span>Hóspedes</span><input type="number" min="0" name="guests" value="${h(editSuite.guests || 0)}" /></label><label class="field-block"><span>Camas</span><input name="beds" value="${h(editSuite.beds || "")}" /></label></div>
+          <label class="field-block"><span>Imagem principal</span><input name="image" value="${h(editSuite.image || "")}" /></label>
           <label class="field-block"><span>Resumo</span><textarea name="summary" required>${h(editSuite.summary || "")}</textarea></label>
-          <label class="field-block"><span>Descricao completa</span><textarea name="details" required>${h(editSuite.details || "")}</textarea></label>
-          <label class="field-block"><span>Amenidades (uma por linha)</span><textarea name="amenities" required>${h((editSuite.amenities || []).join("\n"))}</textarea></label>
-          <label class="field-block"><span>Galeria (uma URL por linha)</span><textarea name="gallery" required>${h((editSuite.gallery || []).join("\n"))}</textarea></label>
-          <button type="submit" class="booking-submit">Salvar suite</button>
+          <label class="field-block"><span>Descrição completa</span><textarea name="details" required>${h(editSuite.details || "")}</textarea></label>
+          <label class="field-block"><span>Amenidades (uma por linha)</span><textarea name="amenities">${h((editSuite.amenities || []).join("\n"))}</textarea></label>
+          <label class="field-block"><span>Galeria (uma URL por linha)</span><textarea name="gallery">${h((editSuite.gallery || []).join("\n"))}</textarea></label>
+          <button type="submit" class="booking-submit">Salvar suíte</button>
         </form>
       </article>
     </section>
@@ -1017,7 +1047,7 @@ function getBookingAvailability(suite = getActiveSuite()) {
       status: "invalid",
       available: false,
       label: "datas pendentes",
-      detail: "Defina um periodo valido para consultar a agenda.",
+      detail: "Defina um período válido para consultar a agenda.",
     };
   }
 
@@ -1031,8 +1061,8 @@ function getBookingAvailability(suite = getActiveSuite()) {
     return {
       status: "conflict",
       available: false,
-      label: "indisponivel nesse periodo",
-      detail: "Ja existe bloqueio pendente ou confirmado nessa janela.",
+      label: "indisponível nesse período",
+      detail: "Já existe bloqueio pendente ou confirmado nessa janela.",
     };
   }
 
@@ -1040,7 +1070,7 @@ function getBookingAvailability(suite = getActiveSuite()) {
     status: "available",
     available: true,
     label: "disponibilidade preliminar",
-    detail: "Livre para receber a solicitacao e seguir para confirmacao.",
+    detail: "Livre para receber a solicitação e seguir para confirmação.",
   };
 }
 
@@ -1272,7 +1302,7 @@ function onSubmit(event) {
   if (id === "booking-form") {
     const summary = getBookingSummary();
     if (!summary.valid) {
-      setNotice("Defina check-in e check-out validos para consultar disponibilidade.");
+      setNotice("Defina check-in e check-out válidos para consultar disponibilidade.");
       return;
     }
     if (!String(state.booking.guestName || "").trim() || !String(state.booking.guestContact || "").trim()) {
@@ -1286,7 +1316,7 @@ function onSubmit(event) {
         checkout: state.booking.checkout,
       })
     ) {
-      setNotice("Esse periodo ja esta bloqueado para a suite selecionada. Escolha novas datas.");
+      setNotice("Esse período já está bloqueado para a categoria selecionada. Escolha novas datas.");
       render();
       return;
     }
@@ -1311,7 +1341,7 @@ function onSubmit(event) {
     state.seller.reservationEditId = reservation.id;
     persistContent();
     window.open(buildReservationUrl(getActiveSuite(), summary, reservation), "_blank", "noopener,noreferrer");
-    setNotice(`Solicitacao registrada para ${getActiveSuite().name}. As datas agora aparecem bloqueadas como pendentes.`);
+    setNotice(`Solicitação registrada para ${getActiveSuite().name}. As datas agora aparecem bloqueadas como pendentes.`);
     return;
   }
 
@@ -1365,16 +1395,19 @@ function onSubmit(event) {
 function saveSuite(fd) {
   const currentSlug = String(fd.get("slug") || "").trim();
   const name = String(fd.get("name") || "").trim();
+  const currentSuite = currentSlug ? state.content.suites.find((suite) => suite.slug === currentSlug) : null;
+  const image = String(fd.get("image") || "").trim() || currentSuite?.image || "";
+  const gallery = lines(fd.get("gallery"));
   const payload = {
     slug: currentSlug || uniqueSlug(slugify(name), state.content.suites),
     name,
     category: String(fd.get("category") || "").trim(),
     rate: Number(fd.get("rate") || 0),
     size: String(fd.get("size") || "").trim(),
-    guests: Number(fd.get("guests") || 1),
+    guests: Number(fd.get("guests") || 0),
     beds: String(fd.get("beds") || "").trim(),
-    image: String(fd.get("image") || "").trim(),
-    gallery: lines(fd.get("gallery")),
+    image,
+    gallery: gallery.length ? gallery : image ? [image] : currentSuite?.gallery || [],
     summary: String(fd.get("summary") || "").trim(),
     details: String(fd.get("details") || "").trim(),
     amenities: lines(fd.get("amenities")),
@@ -1388,7 +1421,7 @@ function saveSuite(fd) {
   state.booking.suite = payload.slug;
   state.seller.suiteEditSlug = payload.slug;
   persistContent();
-  setNotice(`Suite ${payload.name} salva com sucesso.`);
+  setNotice(`Suíte ${payload.name} salva com sucesso.`);
 }
 
 function saveExperience(fd) {
@@ -1602,18 +1635,18 @@ function lines(value) {
 function buildReservationUrl(suite, summary, reservation) {
   const resort = state.content.resort;
   const message = [
-    `Ola, equipe ${resort.name}.`,
+    `Olá, equipe ${resort.name}.`,
     `Registrei um pedido de disponibilidade pelo site.`,
     ``,
-    `Hospede: ${reservation?.guestName || state.booking.guestName}`,
+    `Hóspede: ${reservation?.guestName || state.booking.guestName}`,
     `Contato: ${reservation?.guestContact || state.booking.guestContact}`,
     state.booking.guestEmail ? `E-mail: ${state.booking.guestEmail}` : "",
-    `Suite: ${suite.name}`,
+    `Categoria: ${suite.name}`,
     `Check-in: ${state.booking.checkin}`,
     `Check-out: ${state.booking.checkout}`,
-    `Hospedes: ${formatGuests(state.booking.guests)}`,
+    `Hóspedes: ${formatGuests(state.booking.guests)}`,
     `Estimativa: ${getEstimateLabel(summary, suite)}`,
-    state.booking.notes ? `Observacoes: ${state.booking.notes}` : "",
+    state.booking.notes ? `Observações: ${state.booking.notes}` : "",
   ]
     .filter(Boolean)
     .join("\n");
@@ -1622,7 +1655,7 @@ function buildReservationUrl(suite, summary, reservation) {
     return `https://wa.me/${resort.reservationWhatsapp}?text=${encodeURIComponent(message)}`;
   }
   if (resort.reservationEmail) {
-    return `mailto:${resort.reservationEmail}?subject=${encodeURIComponent(`Solicitacao | ${suite.name}`)}&body=${encodeURIComponent(message)}`;
+    return `mailto:${resort.reservationEmail}?subject=${encodeURIComponent(`Solicitação | ${suite.name}`)}&body=${encodeURIComponent(message)}`;
   }
   return resort.instagramUrl;
 }

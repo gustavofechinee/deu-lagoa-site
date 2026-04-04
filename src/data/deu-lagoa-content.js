@@ -1,23 +1,23 @@
 const asset = (path) => `${import.meta.env.BASE_URL}${path}`;
 
 export const seedContent = {
-  version: 8,
+  version: 9,
   resort: {
-    name: "Hotel Resto Deu Lagoa Uruau",
-    tagline: "Hotel, restaurante e vista para a lagoa em Uruau.",
-    heroTitle: "Lagoa, mesa e estadia no mesmo ritmo.",
+    name: "Deu Lagoa Uruaú",
+    tagline: "Pousada e restô à beira da Lagoa do Uruaú, em Beberibe.",
+    heroTitle: "Pousada e restô à beira da Lagoa do Uruaú.",
     heroCopy:
-      "A Deu Lagoa reune hospedagem, restaurante e uma vista que conduz o tempo do Uruau. Um endereco para chegar sem pressa, ficar perto da agua e reservar direto com a equipe.",
-    storyTitle: "Uma casa de lagoa pensada para mesa, descanso e permanencia.",
+      "Um endereço para desacelerar, chegar perto da água e reservar direto com a equipe. A experiência combina hospedagem, mesa e paisagem no mesmo ritmo.",
+    storyTitle: "Uma casa voltada para a água, para a mesa e para estadias sem pressa.",
     storyCopy:
-      "A experiencia comeca na paisagem, atravessa o resto e segue para estadias desenhadas para fins de semana prolongados, encontros a dois e dias inteiros perto da agua.",
-    location: "Lagoa do Uruau, Beberibe - Ceara",
+      "A leitura da marca parte da lagoa e segue para ambientes de permanência, restaurante e atendimento direto. O objetivo não é volume; é fazer a chegada parecer simples, bonita e bem acompanhada.",
+    location: "Lagoa do Uruaú, Beberibe - Ceará",
     reservationPhone: "",
     reservationWhatsapp: "",
     reservationEmail: "",
     checkIn: "sob consulta",
     checkOut: "sob consulta",
-    seasonLabel: "Deu Lagoa | Hotel + Resto | Uruau",
+    seasonLabel: "Deu Lagoa Uruaú | Pousada + Restô",
     sellerCode: "deulagoa2026",
     heroImage: asset("deu-lagoa/hero-lagoa-hq.jpg"),
     profileImage: asset("deu-lagoa/perfil.jpg"),
@@ -29,38 +29,38 @@ export const seedContent = {
     instagramUrl: "https://www.instagram.com/deulagoauruau/",
   },
   stats: [
-    { value: "Lagoa", label: "a paisagem organiza a chegada e a permanencia" },
-    { value: "Resto", label: "mesa e hospedagem dividem o mesmo endereco" },
-    { value: "Hotel", label: "estadias com atendimento direto da equipe" },
-    { value: "Uruau", label: "Beberibe, Ceara, como destino principal" },
+    { value: "Lagoa", label: "a paisagem organiza a chegada e a permanência" },
+    { value: "Restô", label: "mesa e hospedagem no mesmo endereço" },
+    { value: "Reserva", label: "atendimento direto com a equipe da casa" },
+    { value: "Beberibe", label: "Uruaú como destino principal da viagem" },
   ],
   storyPanels: [
     {
       id: "story-1",
       eyebrow: "paisagem",
       title: "A lagoa define a chegada.",
-      copy: "A vista abre a experiencia, acalma o ritmo e sustenta a primeira impressao da casa.",
+      copy: "A vista abre a experiência, organiza o silêncio da casa e sustenta a primeira memória de quem chega.",
       image: asset("deu-lagoa/hero-lagoa-hq.jpg"),
     },
     {
       id: "story-2",
-      eyebrow: "resto",
-      title: "Mesa e hospedagem no mesmo endereco.",
-      copy: "O restaurante amplia a estadia e faz da reserva uma experiencia que atravessa o dia inteiro.",
+      eyebrow: "mesa",
+      title: "A mesa prolonga a estadia.",
+      copy: "O restô amplia a permanência e transforma a reserva em um programa mais completo, do almoço à noite.",
       image: asset("deu-lagoa/resto-noite-hq.jpg"),
     },
     {
       id: "story-3",
-      eyebrow: "permanencia",
-      title: "O ritmo e de permanencia.",
-      copy: "Quartos, areas comuns e atendimento direto foram organizados para estadias mais longas e reservas acompanhadas pela equipe.",
+      eyebrow: "quartos",
+      title: "Ambientes para ficar mais tempo.",
+      copy: "Quartos, áreas comuns e atendimento foram organizados para uma estadia mais lenta, sem excesso de informação.",
       image: asset("deu-lagoa/suite-casal-hq.jpg"),
     },
   ],
   suites: [
     {
       slug: "consulta-hospedagem",
-      name: "Reserva de hospedagem",
+      name: "Consulta de hospedagem",
       category: "estadia",
       rate: 0,
       size: "",
@@ -72,15 +72,15 @@ export const seedContent = {
         asset("deu-lagoa/hero-lagoa-hq.jpg"),
         asset("deu-lagoa/resto-noite-hq.jpg"),
       ],
-      summary: "Atendimento direto para confirmar categoria, tarifa e datas com a equipe da pousada.",
+      summary: "Consulta direta para confirmar categoria, tarifa e datas com a equipe da pousada.",
       details:
-        "Use esta opcao para iniciar a consulta de disponibilidade e receber a orientacao mais adequada para o periodo desejado.",
+        "Use esta opção para iniciar a consulta de disponibilidade e receber a orientação mais adequada para o período desejado.",
       amenities: [],
     },
     {
       slug: "consulta-experiencia",
       name: "Estadia Deu Lagoa",
-      category: "hotel + resto",
+      category: "pousada + restô",
       rate: 0,
       size: "",
       guests: 0,
@@ -91,9 +91,9 @@ export const seedContent = {
         asset("deu-lagoa/hero-lagoa-hq.jpg"),
         asset("deu-lagoa/familia-hq.jpg"),
       ],
-      summary: "Uma consulta pensada para quem quer alinhar hospedagem, mesa e programacao na mesma reserva.",
+      summary: "Consulta pensada para alinhar hospedagem, mesa e programação na mesma reserva.",
       details:
-        "Ideal para estadias que combinam acomodacao, restaurante e planejamento de chegada com acompanhamento da equipe.",
+        "Ideal para estadias que combinam acomodação, restaurante e planejamento de chegada com acompanhamento da equipe.",
       amenities: [],
     },
   ],
@@ -175,27 +175,27 @@ export const seedContent = {
   ],
   faq: [
     {
-      question: "Como funciona a reserva?",
-      answer: "O pedido de disponibilidade chega a equipe, que confirma categoria, valores e politicas antes da finalizacao.",
+      question: "Como a reserva é iniciada?",
+      answer: "A consulta de disponibilidade chega à equipe, que confirma agenda, categoria e valores antes da finalização.",
     },
     {
       question: "Os valores aparecem no site?",
-      answer: "As tarifas podem ser informadas diretamente pela equipe, de acordo com periodo, categoria e disponibilidade.",
+      answer: "As tarifas seguem sob consulta direta, de acordo com período, categoria e disponibilidade.",
     },
     {
       question: "Posso reservar pelo Instagram?",
-      answer: "Sim. O perfil oficial segue como um dos canais de atendimento rapido para pedidos de disponibilidade.",
+      answer: "Sim. O perfil oficial segue como um dos canais de atendimento rápido para pedidos de disponibilidade.",
     },
     {
-      question: "A disponibilidade e atualizada em tempo real?",
+      question: "A disponibilidade é atualizada em tempo real?",
       answer: "O sistema bloqueia pedidos pendentes e reservas confirmadas para evitar conflito de agenda durante o atendimento.",
     },
   ],
   policies: [
-    "Hotel, resto e lagoa no mesmo endereco.",
+    "Pousada e restô no mesmo endereço.",
     "Reserva direta com acompanhamento da equipe.",
-    "Atendimento integrado ao Instagram oficial.",
-    "Agenda protegida contra sobreposicao de datas.",
+    "Paisagem aberta para a lagoa.",
+    "Agenda protegida contra sobreposição de datas.",
   ],
   instagramPosts: [
     {
@@ -206,27 +206,17 @@ export const seedContent = {
     {
       id: "ig-2",
       image: asset("deu-lagoa/resto-noite-hq.jpg"),
-      caption: "Noite acesa no resto, com a casa operando em ritmo de estadia.",
+      caption: "Noite acesa no restô, com a casa operando em ritmo de estadia.",
     },
     {
       id: "ig-3",
       image: asset("deu-lagoa/suite-casal-hq.jpg"),
-      caption: "Quartos pensados para permanencia, descanso e chegada sem pressa.",
+      caption: "Quartos pensados para permanência, descanso e chegada sem pressa.",
     },
     {
       id: "ig-4",
       image: asset("deu-lagoa/familia-hq.jpg"),
-      caption: "Convivencia leve entre agua, areas comuns e dias mais longos.",
-    },
-    {
-      id: "ig-5",
-      image: asset("deu-lagoa/inauguracao-hq.jpg"),
-      caption: "A marca aparece com tom de casa aberta, mesa pronta e paisagem presente.",
-    },
-    {
-      id: "ig-6",
-      image: asset("deu-lagoa/lagoa.jpg"),
-      caption: "Uruau como destino de agua calma, luz baixa e estadia prolongada.",
+      caption: "Convivência leve entre água, áreas comuns e dias mais longos.",
     },
   ],
   reservations: [],
@@ -251,7 +241,7 @@ export const seedContent = {
       },
       {
         id: "vf-3",
-        label: "A Lagoa do Uruau esta em Beberibe, Ceara.",
+        label: "A Lagoa do Uruau está em Beberibe, Ceará.",
         sourceLabel: "Semace",
         sourceUrl: "https://www.semace.ce.gov.br/2021/05/26/lagoa-do-urau-operacao-de-fiscalizacao-da-semace-e-bpma-resulta-em-embargos-e-auto-de-infracao/",
       },
@@ -310,7 +300,7 @@ export const seedContent = {
     ],
   },
   meta: {
-    updatedAt: "2026-04-02T18:00:00.000Z",
+    updatedAt: "2026-04-04T18:00:00.000Z",
     persistence: "localStorage",
   },
 };
