@@ -350,7 +350,7 @@ body.intro-active:not(.intro-transitioning) .site-footer {
   padding-bottom: 1.2rem;
 }
 
-body.intro-active .hero-intro-copy {
+body.intro-active:not(.intro-transitioning) .hero-intro-copy {
   opacity: 0;
   transform: translateY(24px);
 }
@@ -395,7 +395,7 @@ body.intro-active .hero-intro-copy {
   animation-delay: 0.64s;
 }
 
-body.intro-active .hero-scroll-indicator.hero-intro-copy {
+body.intro-active:not(.intro-transitioning) .hero-scroll-indicator.hero-intro-copy {
   opacity: 0;
   transform: translateY(18px);
 }
