@@ -113,12 +113,13 @@ img {
 
 .reveal {
   opacity: 0;
-  transform: translate3d(0, 34px, 0) scale(0.985);
-  filter: blur(14px);
+  transform: translate3d(0, 42px, 0) scale(0.975);
+  filter: blur(18px);
+  will-change: opacity, transform, filter;
   transition:
-    opacity 0.95s var(--ease) var(--reveal-delay, 0ms),
-    transform 0.95s var(--ease) var(--reveal-delay, 0ms),
-    filter 0.95s var(--ease) var(--reveal-delay, 0ms);
+    opacity 1.05s var(--ease) var(--reveal-delay, 0ms),
+    transform 1.05s var(--ease) var(--reveal-delay, 0ms),
+    filter 1.05s var(--ease) var(--reveal-delay, 0ms);
 }
 
 .reveal.in-view {
@@ -136,6 +137,15 @@ img {
   }
   100% {
     transform: scale(1.04) translate3d(0, 0, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal {
+    opacity: 1;
+    transform: none;
+    filter: none;
+    transition: none;
   }
 }
 

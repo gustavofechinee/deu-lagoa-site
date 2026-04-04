@@ -5,7 +5,7 @@ import { ensureContent, resetContent, writeContent } from "../utils/storage.js";
 
 const app = document.querySelector("#app");
 const SESSION_KEY = "deu_lagoa_seller_session_v1";
-const INTRO_KEY = "deu_lagoa_intro_seen_v2";
+const INTRO_KEY = "deu_lagoa_intro_seen_v3";
 
 const state = {
   content: ensureContent(),
@@ -37,6 +37,8 @@ const state = {
 let revealObserver;
 let noticeTimer = 0;
 let introTimer = 0;
+let introExitTimer = 0;
+let scrollFrame = 0;
 
 init();
 
@@ -47,7 +49,8 @@ function init() {
   app.addEventListener("submit", onSubmit);
   window.addEventListener("hashchange", onRouteChange);
   window.addEventListener("keydown", onKeydown);
-  window.addEventListener("scroll", syncHeader, { passive: true });
+  window.addEventListener("scroll", onScroll, { passive: true });
+  window.addEventListener("resize", requestScrollEffects);
   window.addEventListener("pointermove", updatePointerGlow, { passive: true });
   if (normalizePublicRoute()) return;
   syncSelections();
@@ -97,6 +100,7 @@ function render() {
   syncIntroState();
   bindReveal();
   syncHeader();
+  requestScrollEffects();
 }
 
 function tplBuyerPage() {
@@ -139,11 +143,6 @@ function tplIntroOverlay(resort) {
         }
       </div>
       <div class="intro-overlay-gradient"></div>
-      <div class="intro-overlay-copy">
-        <small>${h(resort.seasonLabel)}</small>
-        <strong>${h(resort.name)}</strong>
-        <span>${h(resort.location)}</span>
-      </div>
       <button type="button" class="intro-skip" data-action="dismiss-intro">Pular</button>
     </div>
   `;
@@ -184,46 +183,57 @@ function tplBuyerHeader() {
 function tplHero(resort, activeSuite, summary) {
   return `
     <section class="hero-section ${state.introVisible ? "intro-playing" : "intro-complete"}" id="topo">
-      <div class="hero-backdrop" style="background-image: linear-gradient(120deg, rgba(6, 15, 20, 0.72), rgba(5, 12, 18, 0.34)), url('${h(resort.heroImage)}');">
+      <div class="hero-backdrop">
+        ${
+          resort.featureVideo
+            ? `
+              <video class="hero-video" data-hero-video="1" autoplay muted loop playsinline preload="metadata" poster="${h(resort.featureVideoPoster || resort.heroImage)}">
+                <source src="${h(resort.featureVideo)}" type="video/mp4" />
+              </video>
+            `
+            : ""
+        }
+        <div class="hero-image ${resort.featureVideo ? "has-video" : ""}" style="background-image: linear-gradient(120deg, rgba(6, 15, 20, 0.72), rgba(5, 12, 18, 0.34)), url('${h(resort.heroImage)}');">
+        </div>
       </div>
       <div class="hero-overlay"></div>
       <div class="hero-grid">
         <div class="hero-content hero-intro-copy">
-          <p class="kicker">${h(resort.seasonLabel)}</p>
-          <h1>${h(resort.heroTitle)}</h1>
-          <p class="hero-lead">${h(resort.heroCopy)}</p>
-          <div class="hero-action-row">
+          <p class="kicker hero-seq hero-seq-1">${h(resort.seasonLabel)}</p>
+          <h1 class="hero-seq hero-seq-2">${h(resort.heroTitle)}</h1>
+          <p class="hero-lead hero-seq hero-seq-3">${h(resort.heroCopy)}</p>
+          <div class="hero-action-row hero-seq hero-seq-4">
             <a class="button-primary" href="#reserva">Consultar disponibilidade</a>
             <a class="button-secondary" href="${h(getPrimaryContactHref())}" target="_blank" rel="noreferrer noopener">${h(getPrimaryContactLabel())}</a>
           </div>
-          <div class="hero-proof-strip">
+          <div class="hero-proof-strip hero-seq hero-seq-5">
             <span>hotel & restaurante</span>
             <span>reserva direta</span>
             <span>Uruaú, Ceará</span>
           </div>
         </div>
         <aside class="hero-aside hero-intro-copy">
-          <div class="hero-aside-block">
+          <div class="hero-aside-block hero-seq hero-seq-1">
             <span>destino</span>
             <strong>${h(resort.location)}</strong>
           </div>
-          <div class="hero-aside-block">
+          <div class="hero-aside-block hero-seq hero-seq-2">
             <span>check-in</span>
             <strong>${h(resort.checkIn)}</strong>
           </div>
-          <div class="hero-aside-block">
+          <div class="hero-aside-block hero-seq hero-seq-3">
             <span>check-out</span>
             <strong>${h(resort.checkOut)}</strong>
           </div>
-          <div class="hero-aside-block hero-aside-block-featured">
+          <div class="hero-aside-block hero-aside-block-featured hero-seq hero-seq-4">
             <span>perfil oficial</span>
             <strong>${h(resort.instagramHandle)}</strong>
             <small>reservas e mais informações por atendimento direto</small>
           </div>
-          <a class="hero-aside-link" href="#instagram">Ver imagens da casa</a>
+          <a class="hero-aside-link hero-seq hero-seq-5" href="#instagram">Ver imagens da casa</a>
         </aside>
       </div>
-      <div class="hero-scroll-indicator hero-intro-copy">
+      <div class="hero-scroll-indicator hero-intro-copy hero-seq hero-seq-6">
         <span></span>
         <small>deslize para conhecer</small>
       </div>
@@ -1011,16 +1021,47 @@ function syncIntroState() {
     window.clearTimeout(introTimer);
     introTimer = 0;
   }
+  if (introExitTimer) {
+    window.clearTimeout(introExitTimer);
+    introExitTimer = 0;
+  }
+
+  const heroVideo = app.querySelector("[data-hero-video='1']");
+  if (heroVideo instanceof HTMLVideoElement) heroVideo.play().catch(() => {});
+
   if (!(state.route.name === "buyer" && state.introVisible)) return;
 
   const introVideo = app.querySelector("[data-intro-video='1']");
   if (introVideo instanceof HTMLVideoElement) {
     introVideo.play().catch(() => {});
-    introTimer = window.setTimeout(dismissIntro, 2400);
+    introTimer = window.setTimeout(startIntroTransition, 2800);
     return;
   }
 
-  introTimer = window.setTimeout(dismissIntro, 1800);
+  introTimer = window.setTimeout(startIntroTransition, 1900);
+}
+
+function startIntroTransition() {
+  if (!(state.route.name === "buyer" && state.introVisible)) return;
+  if (introExitTimer) return;
+  if (introTimer) {
+    window.clearTimeout(introTimer);
+    introTimer = 0;
+  }
+
+  const introOverlay = app.querySelector(".intro-overlay");
+  const heroSection = app.querySelector(".hero-section");
+  const header = app.querySelector(".site-header");
+
+  if (introOverlay instanceof HTMLElement) introOverlay.classList.add("is-leaving");
+  if (heroSection instanceof HTMLElement) {
+    heroSection.classList.add("intro-revealing");
+    heroSection.classList.add("intro-complete");
+  }
+  if (header instanceof HTMLElement) header.classList.add("intro-revealing");
+  document.body.classList.add("intro-transitioning");
+
+  introExitTimer = window.setTimeout(dismissIntro, 1150);
 }
 
 function dismissIntro() {
@@ -1028,16 +1069,21 @@ function dismissIntro() {
   state.introVisible = false;
   sessionStorage.setItem(INTRO_KEY, "1");
   document.body.classList.remove("intro-active");
+  document.body.classList.remove("intro-transitioning");
   const introOverlay = app.querySelector(".intro-overlay");
   if (introOverlay instanceof HTMLElement) introOverlay.remove();
+  const header = app.querySelector(".site-header");
+  if (header instanceof HTMLElement) header.classList.remove("intro-revealing");
   const heroSection = app.querySelector(".hero-section");
   if (heroSection instanceof HTMLElement) {
     heroSection.classList.remove("intro-playing");
+    heroSection.classList.remove("intro-revealing");
     heroSection.classList.add("intro-complete");
     heroSection.classList.add("intro-settled");
   }
   bindReveal();
   syncHeader();
+  requestScrollEffects();
 }
 
 function tplSellerSuitePreview(suite) {
@@ -1243,7 +1289,7 @@ function onClick(event) {
 
   const dismissIntroTrigger = event.target.closest('[data-action="dismiss-intro"]');
   if (dismissIntroTrigger) {
-    dismissIntro();
+    startIntroTransition();
     return;
   }
 
@@ -1754,6 +1800,11 @@ function onKeydown(event) {
     return;
   }
 
+  if (event.key === "Escape" && state.introVisible) {
+    startIntroTransition();
+    return;
+  }
+
   if (event.ctrlKey && event.shiftKey && event.key.toLowerCase() === "v") {
     event.preventDefault();
     location.hash = "/vendedor";
@@ -1800,10 +1851,52 @@ function bindReveal() {
       });
       animateCounters();
     },
-    { threshold: 0.18 },
+    { threshold: 0.1, rootMargin: "0px 0px -8% 0px" },
   );
 
   nodes.forEach((node) => revealObserver.observe(node));
+}
+
+function onScroll() {
+  syncHeader();
+  requestScrollEffects();
+}
+
+function requestScrollEffects() {
+  if (scrollFrame) return;
+  scrollFrame = window.requestAnimationFrame(syncScrollEffects);
+}
+
+function syncScrollEffects() {
+  scrollFrame = 0;
+  if (state.route.name !== "buyer") return;
+
+  const viewportHeight = Math.max(window.innerHeight || 0, 1);
+  const hero = app.querySelector(".hero-section");
+  if (hero instanceof HTMLElement) {
+    const rect = hero.getBoundingClientRect();
+    const progress = Math.max(0, Math.min(1.4, (-rect.top || 0) / Math.max(rect.height * 0.92, 1)));
+    hero.style.setProperty("--hero-progress", progress.toFixed(3));
+  }
+
+  const mediaTargets = [
+    [".story-feature img", 24],
+    [".story-note-media img", 18],
+    [".suite-stage-media img", 18],
+    [".reservation-side-image img", 16],
+    [".cinema-frame video", 28],
+    [".instagram-card img", 14],
+  ];
+
+  mediaTargets.forEach(([selector, amplitude]) => {
+    app.querySelectorAll(selector).forEach((node) => {
+      const rect = node.getBoundingClientRect();
+      const centerOffset = rect.top + rect.height / 2 - viewportHeight / 2;
+      const normalized = centerOffset / viewportHeight;
+      const translate = Math.max(-amplitude, Math.min(amplitude, normalized * -amplitude));
+      node.style.setProperty("--media-parallax-y", `${translate.toFixed(2)}px`);
+    });
+  });
 }
 
 function animateCounters() {
