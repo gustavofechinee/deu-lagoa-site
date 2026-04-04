@@ -1,0 +1,217 @@
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  font-family: "Manrope", sans-serif;
+  color: var(--text);
+  background:
+    radial-gradient(circle at 15% 15%, rgba(156, 201, 187, 0.14), transparent 24%),
+    radial-gradient(circle at 82% 22%, rgba(239, 224, 191, 0.08), transparent 16%),
+    radial-gradient(circle at 50% 120%, rgba(217, 187, 126, 0.1), transparent 26%),
+    linear-gradient(180deg, #07100d 0%, var(--bg) 34%, var(--bg-deep) 68%, #071510 100%);
+  overflow-x: hidden;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(circle at var(--pointer-x) var(--pointer-y), rgba(138, 213, 203, 0.1), transparent 18%);
+  mix-blend-mode: screen;
+  z-index: 0;
+}
+
+a {
+  color: inherit;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button {
+  border: 0;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+}
+
+#app {
+  position: relative;
+  z-index: 1;
+}
+
+.kicker {
+  margin: 0 0 1rem;
+  color: rgba(255, 255, 255, 0.74);
+  font-size: 0.72rem;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+}
+
+.section-shell {
+  width: var(--content);
+  margin: 0 auto;
+  padding-top: 6rem;
+}
+
+.section-heading {
+  max-width: 760px;
+  margin-bottom: 2rem;
+}
+
+.section-heading h2,
+.hero-content h1,
+.story-copy h2,
+.cinema-copy h2,
+.ritual-copy h2,
+.final-cta-copy h2,
+.suite-stage-copy h3,
+.booking-panel-head h2 {
+  margin: 0;
+  font-family: "Cormorant Garamond", serif;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.section-heading h2,
+.story-copy h2,
+.cinema-copy h2,
+.ritual-copy h2,
+.final-cta-copy h2 {
+  font-size: clamp(2.8rem, 5vw, 4.6rem);
+  line-height: 0.96;
+}
+
+.section-heading p,
+.hero-lead,
+.story-copy p,
+.cinema-copy p,
+.ritual-copy p,
+.final-cta-copy p,
+.booking-panel-head p {
+  color: var(--muted);
+  line-height: 1.8;
+}
+
+.reveal {
+  opacity: 0;
+  transform: translate3d(0, 34px, 0) scale(0.985);
+  filter: blur(14px);
+  transition:
+    opacity 0.95s var(--ease) var(--reveal-delay, 0ms),
+    transform 0.95s var(--ease) var(--reveal-delay, 0ms),
+    filter 0.95s var(--ease) var(--reveal-delay, 0ms);
+}
+
+.reveal.in-view {
+  opacity: 1;
+  transform: translate3d(0, 0, 0) scale(1);
+  filter: blur(0);
+}
+
+@keyframes slowDrift {
+  0% {
+    transform: scale(1.04) translate3d(0, 0, 0);
+  }
+  50% {
+    transform: scale(1.08) translate3d(0, -10px, 0);
+  }
+  100% {
+    transform: scale(1.04) translate3d(0, 0, 0);
+  }
+}
+
+.button-primary,
+.button-secondary,
+.header-button,
+.booking-submit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 52px;
+  padding: 0.92rem 1.24rem;
+  border-radius: var(--radius-pill);
+  text-decoration: none;
+  font-weight: 800;
+  transition:
+    transform 0.28s var(--ease),
+    border-color 0.28s var(--ease),
+    background 0.28s var(--ease),
+    color 0.28s var(--ease);
+}
+
+.button-primary,
+.header-button,
+.booking-submit {
+  background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+  color: #041114;
+}
+
+.button-secondary {
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--text);
+}
+
+.button-primary:hover,
+.button-secondary:hover,
+.header-button:hover,
+.booking-submit:hover,
+.suite-chip:hover,
+.gallery-thumb:hover,
+.faq-question:hover,
+.contact-link:hover,
+.experience-card:hover,
+.timeline-card:hover,
+.testimonial-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 24px 44px -28px rgba(0, 0, 0, 0.75);
+}
+
+.site-notice {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 40;
+  max-width: min(420px, calc(100vw - 2rem));
+  padding: 1rem 1.2rem;
+  border-radius: 18px;
+  border: 1px solid rgba(138, 213, 203, 0.24);
+  background: rgba(7, 19, 24, 0.94);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(14px);
+  animation: noticeIn 0.36s var(--ease);
+}
+
+@keyframes noticeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.mobile-dock {
+  display: none;
+}
