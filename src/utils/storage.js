@@ -1,6 +1,6 @@
 import { seedContent } from "../data/deu-lagoa-content.js";
 
-const KEY = "deu_lagoa_content_v3";
+const KEY = "deu_lagoa_content_v4";
 
 export function ensureContent() {
   const current = readContent();

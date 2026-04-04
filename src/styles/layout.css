@@ -22,7 +22,9 @@
   transition:
     background 0.3s var(--ease),
     border-color 0.3s var(--ease),
-    box-shadow 0.3s var(--ease);
+    box-shadow 0.3s var(--ease),
+    opacity 0.3s var(--ease),
+    transform 0.3s var(--ease);
 }
 
 .site-header.scrolled,

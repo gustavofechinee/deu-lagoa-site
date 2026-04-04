@@ -113,15 +113,18 @@ img {
 
 .reveal {
   opacity: 0;
-  transform: translateY(26px);
+  transform: translate3d(0, 34px, 0) scale(0.985);
+  filter: blur(14px);
   transition:
-    opacity 0.8s var(--ease),
-    transform 0.8s var(--ease);
+    opacity 0.95s var(--ease) var(--reveal-delay, 0ms),
+    transform 0.95s var(--ease) var(--reveal-delay, 0ms),
+    filter 0.95s var(--ease) var(--reveal-delay, 0ms);
 }
 
 .reveal.in-view {
   opacity: 1;
-  transform: translateY(0);
+  transform: translate3d(0, 0, 0) scale(1);
+  filter: blur(0);
 }
 
 @keyframes slowDrift {

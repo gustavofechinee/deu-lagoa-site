@@ -5,6 +5,7 @@ import { ensureContent, resetContent, writeContent } from "../utils/storage.js";
 
 const app = document.querySelector("#app");
 const SESSION_KEY = "deu_lagoa_seller_session_v1";
+const INTRO_KEY = "deu_lagoa_intro_seen_v1";
 
 const state = {
   content: ensureContent(),
@@ -14,10 +15,11 @@ const state = {
   activeGalleryIndex: 0,
   openFaq: "",
   notice: "",
+  introVisible: shouldShowIntro(),
   booking: {
     suite: "",
-    checkin: "2026-04-10",
-    checkout: "2026-04-13",
+    checkin: "",
+    checkout: "",
     guests: 2,
     guestName: "",
     guestContact: "",
@@ -34,6 +36,7 @@ const state = {
 
 let revealObserver;
 let noticeTimer = 0;
+let introTimer = 0;
 
 init();
 
@@ -67,6 +70,8 @@ function onRouteChange() {
   if (normalizePublicRoute()) return;
   state.route = parseRoute();
   state.menuOpen = false;
+  if (state.route.name === "buyer" && shouldShowIntro()) state.introVisible = true;
+  if (state.route.name === "seller") state.introVisible = false;
   syncSelections();
   render();
 }
@@ -89,6 +94,7 @@ function render() {
       ${tplNotice()}
     </div>
   `;
+  syncIntroState();
   bindReveal();
   syncHeader();
 }
@@ -101,8 +107,10 @@ function tplBuyerPage() {
   return `
     ${tplBuyerHeader()}
     <main class="page-main">
+      ${tplIntroOverlay(resort)}
       ${tplHero(resort, activeSuite, summary)}
       ${tplBrandStory(resort)}
+      ${tplExperienceGrid()}
       ${tplSuites(activeSuite)}
       ${tplCinema(resort)}
       ${tplReservationStudio(resort, activeSuite, summary)}
@@ -112,6 +120,32 @@ function tplBuyerPage() {
     </main>
     ${tplMobileDock()}
     ${tplSiteFooter()}
+  `;
+}
+
+function tplIntroOverlay(resort) {
+  if (!state.introVisible) return "";
+  return `
+    <div class="intro-overlay" data-intro-overlay="1" aria-label="Abertura do site">
+      <div class="intro-overlay-media">
+        ${
+          resort.featureVideo
+            ? `
+              <video class="intro-video" data-intro-video="1" autoplay muted playsinline preload="auto" poster="${h(resort.featureVideoPoster || resort.heroImage)}">
+                <source src="${h(resort.featureVideo)}" type="video/mp4" />
+              </video>
+            `
+            : `<img class="intro-image" src="${h(resort.heroImage)}" alt="${h(resort.name)}" />`
+        }
+      </div>
+      <div class="intro-overlay-gradient"></div>
+      <div class="intro-overlay-copy">
+        <p class="kicker">${h(resort.seasonLabel)}</p>
+        <strong>${h(resort.name)}</strong>
+        <span>${h(resort.location)}</span>
+      </div>
+      <button type="button" class="intro-skip" data-action="dismiss-intro">Pular</button>
+    </div>
   `;
 }
 
@@ -132,10 +166,11 @@ function tplBuyerHeader() {
       </button>
       <nav class="site-nav ${state.menuOpen ? "open" : ""}">
         <a href="#historia">A casa</a>
-        <a href="#suites">Estadia</a>
+        <a href="#experiencias">Experiência</a>
+        <a href="#suites">Hospedagem</a>
         <a href="#reserva">Reserva</a>
-        <a href="#video">Vídeo</a>
-        <a href="#instagram">Galeria</a>
+        <a href="#video">Reel</a>
+        <a href="#instagram">Imagens</a>
         <a href="#contato">Contato</a>
       </nav>
       <div class="header-actions">
@@ -161,7 +196,7 @@ function tplHero(resort, activeSuite, summary) {
             <a class="button-secondary" href="${h(getPrimaryContactHref())}" target="_blank" rel="noreferrer noopener">${h(getPrimaryContactLabel())}</a>
           </div>
           <div class="hero-proof-strip">
-            <span>pousada + restô</span>
+            <span>hotel & restaurante</span>
             <span>reserva direta</span>
             <span>Uruaú, Ceará</span>
           </div>
@@ -180,11 +215,11 @@ function tplHero(resort, activeSuite, summary) {
             <strong>${h(resort.checkOut)}</strong>
           </div>
           <div class="hero-aside-block hero-aside-block-featured">
-            <span>estadia sugerida</span>
-            <strong>${h(activeSuite.name)}</strong>
-            <small>${h(getEstimateLabel(summary, activeSuite))}</small>
+            <span>perfil oficial</span>
+            <strong>${h(resort.instagramHandle)}</strong>
+            <small>reservas e mais informações por atendimento direto</small>
           </div>
-          <a class="hero-aside-link" href="#instagram">Ver atmosfera da casa</a>
+          <a class="hero-aside-link" href="#instagram">Ver imagens da casa</a>
         </aside>
       </div>
       <div class="hero-scroll-indicator">
@@ -204,8 +239,8 @@ function tplReservationStudio(resort, activeSuite, summary) {
       <div class="reservation-studio-shell">
         <div class="reservation-studio-copy reveal">
           <p class="kicker">reservas</p>
-          <h2>Consulta direta com a equipe, sem ruído e com agenda protegida.</h2>
-          <p>Escolha as datas, envie seu contato e abra a consulta de disponibilidade. O período fica protegido enquanto a equipe retorna com categoria, valores e confirmação final.</p>
+          <h2>Consulta de hospedagem com agenda protegida.</h2>
+          <p>Escolha as datas, envie seu contato e abra uma solicitação preliminar de hospedagem. O período fica bloqueado como pendente enquanto a equipe confirma disponibilidade e condições da estadia.</p>
           <div class="reservation-side-image">
             <img src="${h(activeSuite.image || resort.signatureImage)}" alt="${h(activeSuite.name)}" />
           </div>
@@ -231,7 +266,7 @@ function tplReservationStudio(resort, activeSuite, summary) {
           </div>
           <form class="booking-form" id="booking-form">
             <label class="field-block">
-              <span>Reserva</span>
+              <span>Categoria</span>
               <select name="suite">
                 ${state.content.suites
                   .map((suite) => `<option value="${h(suite.slug)}" ${suite.slug === state.booking.suite ? "selected" : ""}>${h(suite.name)}</option>`)
@@ -261,9 +296,9 @@ function tplReservationStudio(resort, activeSuite, summary) {
                 <img src="${h(resort.profileImage)}" alt="${h(resort.name)}" />
                 <span>${h(resort.instagramHandle)}</span>
               </div>
-              <div><small>categoria sugerida</small><strong>${h(activeSuite.name)}</strong></div>
-              <div><small>faixa tarifária</small><strong>${h(getRateLabel(activeSuite.rate))}</strong></div>
-              <div><small>estimativa</small><strong>${h(getEstimateLabel(summary, activeSuite))}</strong></div>
+              <div><small>consulta</small><strong>${h(activeSuite.name)}</strong></div>
+              <div><small>tarifa</small><strong>${h(getRateLabel(activeSuite.rate))}</strong></div>
+              <div><small>status do pedido</small><strong>${h(getEstimateLabel(summary, activeSuite))}</strong></div>
               <div class="availability-badge ${availability.available ? "available" : availability.status === "invalid" ? "pending" : "unavailable"}">
                 <small>${h(availability.label)}</small>
                 <strong>${h(availability.detail)}</strong>
@@ -281,7 +316,7 @@ function tplReservationStudio(resort, activeSuite, summary) {
                   : `
                     <div class="blocked-window-list">
                       <small>agenda atual</small>
-                      <span>Sem bloqueios cadastrados para esta categoria.</span>
+                      <span>Sem bloqueios cadastrados para esta consulta.</span>
                     </div>
                   `
               }
@@ -392,8 +427,8 @@ function tplSuites(activeSuite) {
     <section class="suite-section section-shell" id="suites">
       <div class="section-heading reveal">
         <p class="kicker">hospedagem</p>
-        <h2>Formas de iniciar a estadia com mais clareza.</h2>
-        <p>Selecione a frente de atendimento mais adequada para o seu momento. A equipe confirma categoria, valores e agenda na resposta.</p>
+        <h2>Consulta direta para verificar a hospedagem.</h2>
+        <p>O site abre o pedido e protege a agenda. A equipe retorna com disponibilidade, tarifa e categoria para o período solicitado.</p>
       </div>
       <div class="suite-layout">
         <div class="suite-list reveal">
@@ -432,11 +467,11 @@ function tplCinema(resort) {
       <div class="cinema-shell reveal">
         <div class="cinema-copy">
           <p class="kicker">movimento</p>
-          <h2>Um recorte em movimento para sentir o ritmo da casa.</h2>
-          <p>Água, mesa, luz baixa e permanência aparecem melhor em sequência. O vídeo concentra a atmosfera que a pousada entrega ao vivo.</p>
+          <h2>Filmagens do local publicadas no perfil oficial.</h2>
+          <p>O vídeo abaixo usa um reel oficial da Deu Lagoa Uruaú com imagens da lagoa e da casa, sem apresentação em frente à câmera.</p>
           <div class="hero-action-row">
             <a class="button-primary" href="${h(getPrimaryContactHref())}" target="_blank" rel="noreferrer noopener">${h(getPrimaryContactLabel())}</a>
-            <a class="button-secondary" href="${h(resort.instagramUrl)}" target="_blank" rel="noreferrer noopener">Ver reels da marca</a>
+            <a class="button-secondary" href="${h(resort.featureVideoSourceUrl || resort.instagramUrl)}" target="_blank" rel="noreferrer noopener">Abrir reel oficial</a>
           </div>
         </div>
         <div class="cinema-frame">
@@ -471,8 +506,8 @@ function tplExperienceGrid() {
   return `
     <section class="experience-section section-shell" id="experiencias">
       <div class="section-heading reveal">
-        <p class="kicker">a estadia</p>
-        <h2>O que define a experiencia na Deu Lagoa.</h2>
+        <p class="kicker">perfil oficial</p>
+        <h2>O que a própria marca comunica sobre o lugar.</h2>
       </div>
       <div class="experience-grid">
         ${state.content.experiences
@@ -489,21 +524,21 @@ function tplInstagram() {
   return `
     <section class="instagram-section section-shell" id="instagram">
       <div class="section-heading reveal">
-        <p class="kicker">galeria</p>
-        <h2>Paisagem, quartos e mesa em uma seleção mais precisa.</h2>
-        <p>Os recortes abaixo reforçam a leitura da marca: beira de lagoa, estadia, restaurante e permanência sem pressa.</p>
+        <p class="kicker">imagens</p>
+        <h2>Ambiente, hospedagem e lagoa em uma seleção mais limpa.</h2>
+        <p>Os destaques abaixo usam imagens da própria operação para sustentar a leitura do lugar sem excesso de texto promocional.</p>
       </div>
       <div class="instagram-grid">
         ${posts
           .map(
             (post, index) => `
-              <article class="instagram-card instagram-card-${(index % 3) + 1} reveal">
+              <${post.sourceUrl ? "a" : "article"} class="instagram-card instagram-card-${(index % 3) + 1} reveal" ${post.sourceUrl ? `href="${h(post.sourceUrl)}" target="_blank" rel="noreferrer noopener"` : ""}>
                 <img src="${h(post.image)}" alt="${h(post.caption)}" />
                 <div>
                   <small>${h(resort.instagramHandle)}</small>
                   <p>${h(post.caption)}</p>
                 </div>
-              </article>
+              </${post.sourceUrl ? "a" : "article"}>
             `,
           )
           .join("")}
@@ -548,7 +583,7 @@ function tplFaq() {
     <section class="faq-section section-shell" id="faq">
       <div class="section-heading reveal">
         <p class="kicker">perguntas</p>
-        <h2>Informações objetivas para agilizar a reserva.</h2>
+        <h2>Informações públicas confirmadas até aqui.</h2>
       </div>
       <div class="faq-stack reveal">
         ${state.content.faq
@@ -563,19 +598,23 @@ function tplFaq() {
 
 function tplFinalCta(resort, activeSuite, summary) {
   const contactLinks = getContactLinks();
+  const dateLabel =
+    state.booking.checkin && state.booking.checkout
+      ? `${formatDateLabel(state.booking.checkin)} - ${formatDateLabel(state.booking.checkout)}`
+      : "Defina o período desejado";
   return `
     <section class="final-cta section-shell" id="contato">
       <div class="final-cta-card reveal" style="background-image: linear-gradient(120deg, rgba(5, 12, 14, 0.44), rgba(5, 12, 14, 0.78)), url('${h(resort.signatureImage || activeSuite.image)}');">
         <div class="final-cta-copy">
           <p class="kicker">contato</p>
-          <h2>Se a data fizer sentido para a sua viagem, a equipe conclui o restante por atendimento direto.</h2>
+          <h2>Se o período fizer sentido para a sua viagem, a equipe conclui o restante por atendimento direto.</h2>
           <p>${h(resort.tagline)}</p>
           <div class="contact-rail">${contactLinks.map((item) => `<a class="contact-link" href="${h(item.href)}" ${item.external ? 'target="_blank" rel="noreferrer noopener"' : ""}>${h(item.label)}</a>`).join("")}</div>
         </div>
         <div class="final-cta-summary">
           <small>consulta enviada</small>
           <strong>${h(activeSuite.name)}</strong>
-          <span>${h(formatDateLabel(state.booking.checkin))} - ${h(formatDateLabel(state.booking.checkout))}</span>
+          <span>${h(dateLabel)}</span>
           <span>${h(formatGuests(state.booking.guests))}</span>
           <b>${h(getEstimateLabel(summary, activeSuite))}</b>
         </div>
@@ -606,7 +645,7 @@ function tplMobileDock() {
   const resort = state.content.resort;
   return `
     <div class="mobile-dock" aria-label="Acoes rapidas">
-      <a class="mobile-dock-link" href="#reserva">Reservar</a>
+      <a class="mobile-dock-link" href="#reserva">Consultar</a>
       <a class="mobile-dock-link" href="${h(resort.instagramUrl)}" target="_blank" rel="noreferrer noopener">Instagram</a>
     </div>
   `;
@@ -619,10 +658,10 @@ function tplSellerPage() {
     ${tplSellerHeader()}
     <main class="seller-main section-shell seller-shell">
       <section class="seller-kpis reveal">
-        <article><strong>${state.content.suites.length}</strong><span>su\u00edtes cadastradas</span></article>
+        <article><strong>${state.content.suites.length}</strong><span>categorias cadastradas</span></article>
         <article><strong>${metrics.activeCount}</strong><span>reservas bloqueando agenda</span></article>
         <article><strong>${metrics.pendingCount}</strong><span>solicita\u00e7\u00f5es pendentes</span></article>
-        <article><strong>${h(getAverageRateLabel())}</strong><span>faixa m\u00e9dia cadastrada</span></article>
+        <article><strong>${h(getAverageRateLabel())}</strong><span>tarif?rio cadastrado</span></article>
         <article><strong>${metrics.occupancyRate}%</strong><span>ocupa\u00e7\u00e3o projetada em 90 dias</span></article>
         <article><strong>${h(state.content.resort.location)}</strong><span>opera\u00e7\u00e3o atual</span></article>
       </section>
@@ -651,7 +690,7 @@ function tplSellerHeader() {
       </a>
       <button type="button" class="menu-toggle" data-action="toggle-menu" aria-label="Abrir menu"><span></span><span></span></button>
       <nav class="site-nav ${state.menuOpen ? "open" : ""}">
-        <a class="${state.route.tab === "suites" ? "active" : ""}" href="#/vendedor/suites">Suites</a>
+        <a class="${state.route.tab === "suites" ? "active" : ""}" href="#/vendedor/suites">Hospedagem</a>
         <a class="${state.route.tab === "experiencias" ? "active" : ""}" href="#/vendedor/experiencias">Experi\u00eancias</a>
         <a class="${state.route.tab === "reservas" ? "active" : ""}" href="#/vendedor/reservas">Reservas</a>
         <a class="${state.route.tab === "midia" ? "active" : ""}" href="#/vendedor/midia">M\u00eddia</a>
@@ -724,7 +763,7 @@ function tplSellerSuites() {
   return `
     <section class="seller-grid reveal">
       <article class="seller-panel seller-panel-list">
-        <div class="seller-panel-head"><div><small>cadastro</small><h2>Suites e casas</h2></div><button type="button" class="seller-link-button" data-action="new-suite">Nova suite</button></div>
+        <div class="seller-panel-head"><div><small>cadastro</small><h2>Categorias de hospedagem</h2></div><button type="button" class="seller-link-button" data-action="new-suite">Nova categoria</button></div>
         <div class="seller-list">
           ${state.content.suites
             .map(
@@ -734,7 +773,7 @@ function tplSellerSuites() {
         </div>
       </article>
       <article class="seller-panel seller-panel-form">
-        <div class="seller-panel-head"><div><small>edicao</small><h2>${h(editSuite.name || "Nova suite")}</h2></div>${editSuite.slug ? `<button type="button" class="seller-link-button danger-link" data-action="delete-suite" data-suite="${h(editSuite.slug)}">Excluir</button>` : ""}</div>
+        <div class="seller-panel-head"><div><small>edicao</small><h2>${h(editSuite.name || "Nova categoria")}</h2></div>${editSuite.slug ? `<button type="button" class="seller-link-button danger-link" data-action="delete-suite" data-suite="${h(editSuite.slug)}">Excluir</button>` : ""}</div>
         ${tplSellerSuitePreview(editSuite)}
         <form class="seller-form" id="seller-suite-form">
           <input type="hidden" name="slug" value="${h(editSuite.slug || "")}" />
@@ -745,7 +784,7 @@ function tplSellerSuites() {
           <label class="field-block"><span>Descrição completa</span><textarea name="details" required>${h(editSuite.details || "")}</textarea></label>
           <label class="field-block"><span>Amenidades (uma por linha)</span><textarea name="amenities">${h((editSuite.amenities || []).join("\n"))}</textarea></label>
           <label class="field-block"><span>Galeria (uma URL por linha)</span><textarea name="gallery">${h((editSuite.gallery || []).join("\n"))}</textarea></label>
-          <button type="submit" class="booking-submit">Salvar suíte</button>
+          <button type="submit" class="booking-submit">Salvar categoria</button>
         </form>
       </article>
     </section>
@@ -909,7 +948,7 @@ function tplSellerMedia() {
           <div class="seller-list">
             ${state.content.instagramPosts
               .map(
-                (post) => `<button type="button" class="seller-card ${post.id === state.seller.instagramEditId ? "active" : ""}" data-edit-instagram="${h(post.id)}"><div><strong>${h(post.caption.slice(0, 42))}${post.caption.length > 42 ? "..." : ""}</strong><span>${h(post.image)}</span></div><small>Instagram</small></button>`,
+                (post) => `<button type="button" class="seller-card ${post.id === state.seller.instagramEditId ? "active" : ""}" data-edit-instagram="${h(post.id)}"><div><strong>${h(post.caption.slice(0, 42))}${post.caption.length > 42 ? "..." : ""}</strong><span>${h(post.image)}</span></div><small>${h(post.sourceUrl ? "Instagram" : "Local")}</small></button>`,
               )
               .join("")}
           </div>
@@ -919,6 +958,7 @@ function tplSellerMedia() {
           <form class="seller-form" id="seller-instagram-form">
             <input type="hidden" name="id" value="${h(editInstagram.id || "")}" />
             <label class="field-block"><span>Imagem</span><input name="image" value="${h(editInstagram.image || "")}" required /></label>
+            <label class="field-block"><span>URL de origem</span><input name="sourceUrl" value="${h(editInstagram.sourceUrl || "")}" placeholder="https://www.instagram.com/..." /></label>
             <label class="field-block"><span>Legenda</span><textarea name="caption" required>${h(editInstagram.caption || "")}</textarea></label>
             <button type="submit" class="booking-submit">Salvar destaque</button>
           </form>
@@ -958,6 +998,35 @@ function tplSellerConfig() {
 function tplNotice() {
   if (!state.notice) return "";
   return `<div class="site-notice" role="status" aria-live="polite">${h(state.notice)}</div>`;
+}
+
+function shouldShowIntro() {
+  return parseRoute().name === "buyer" && sessionStorage.getItem(INTRO_KEY) !== "1";
+}
+
+function syncIntroState() {
+  document.body.classList.toggle("intro-active", state.route.name === "buyer" && state.introVisible);
+  if (introTimer) {
+    window.clearTimeout(introTimer);
+    introTimer = 0;
+  }
+  if (!(state.route.name === "buyer" && state.introVisible)) return;
+
+  const introVideo = app.querySelector("[data-intro-video='1']");
+  if (introVideo instanceof HTMLVideoElement) {
+    introVideo.addEventListener("ended", dismissIntro, { once: true });
+    introTimer = window.setTimeout(dismissIntro, 6500);
+    return;
+  }
+
+  introTimer = window.setTimeout(dismissIntro, 3200);
+}
+
+function dismissIntro() {
+  if (!state.introVisible) return;
+  state.introVisible = false;
+  sessionStorage.setItem(INTRO_KEY, "1");
+  render();
 }
 
 function tplSellerSuitePreview(suite) {
@@ -1019,7 +1088,7 @@ function getPrimaryContactLabel() {
   const resort = state.content.resort;
   if (resort.reservationWhatsapp) return "Falar no WhatsApp";
   if (resort.reservationEmail) return "Enviar e-mail";
-  return "Ver Instagram oficial";
+  return "Instagram da pousada";
 }
 
 function getContactLinks() {
@@ -1120,7 +1189,7 @@ function emptyExperience() {
 }
 
 function emptyInstagramPost() {
-  return { id: "", image: "", caption: "" };
+  return { id: "", image: "", caption: "", sourceUrl: "" };
 }
 
 function emptyReservation() {
@@ -1158,6 +1227,12 @@ function onClick(event) {
   if (toggle) {
     state.menuOpen = !state.menuOpen;
     render();
+    return;
+  }
+
+  const dismissIntroTrigger = event.target.closest('[data-action="dismiss-intro"]');
+  if (dismissIntroTrigger) {
+    dismissIntro();
     return;
   }
 
@@ -1463,6 +1538,7 @@ function saveInstagramPost(fd) {
   const payload = {
     id: currentId || uid("ig"),
     image: String(fd.get("image") || "").trim(),
+    sourceUrl: String(fd.get("sourceUrl") || "").trim(),
     caption: String(fd.get("caption") || "").trim(),
   };
 
@@ -1696,6 +1772,8 @@ function bindReveal() {
   if (revealObserver) revealObserver.disconnect();
   const nodes = app.querySelectorAll(".reveal");
   if (!nodes.length) return;
+  nodes.forEach((node, index) => node.style.setProperty("--reveal-delay", `${Math.min(index % 6, 5) * 70}ms`));
+  if (state.route.name === "buyer" && state.introVisible) return;
   if (!("IntersectionObserver" in window)) {
     nodes.forEach((node) => node.classList.add("in-view"));
     animateCounters();
