@@ -5,7 +5,7 @@ import { ensureContent, resetContent, writeContent } from "../utils/storage.js";
 
 const app = document.querySelector("#app");
 const SESSION_KEY = "deu_lagoa_seller_session_v1";
-const INTRO_KEY = "deu_lagoa_intro_seen_v1";
+const INTRO_KEY = "deu_lagoa_intro_seen_v2";
 
 const state = {
   content: ensureContent(),
@@ -107,6 +107,7 @@ function tplBuyerPage() {
   return `
     ${tplBuyerHeader()}
     <main class="page-main">
+      ${tplIntroOverlay(resort)}
       ${tplHero(resort, activeSuite, summary)}
       ${tplBrandStory(resort)}
       ${tplExperienceGrid()}
@@ -119,6 +120,32 @@ function tplBuyerPage() {
     </main>
     ${tplMobileDock()}
     ${tplSiteFooter()}
+  `;
+}
+
+function tplIntroOverlay(resort) {
+  if (!state.introVisible) return "";
+  return `
+    <div class="intro-overlay" data-intro-overlay="1" aria-label="Abertura da Deu Lagoa Uruaú">
+      <div class="intro-overlay-media">
+        ${
+          resort.featureVideo
+            ? `
+              <video class="intro-video" data-intro-video="1" autoplay muted playsinline preload="auto" poster="${h(resort.featureVideoPoster || resort.heroImage)}">
+                <source src="${h(resort.featureVideo)}" type="video/mp4" />
+              </video>
+            `
+            : `<img class="intro-image" src="${h(resort.heroImage)}" alt="${h(resort.name)}" />`
+        }
+      </div>
+      <div class="intro-overlay-gradient"></div>
+      <div class="intro-overlay-copy">
+        <small>${h(resort.seasonLabel)}</small>
+        <strong>${h(resort.name)}</strong>
+        <span>${h(resort.location)}</span>
+      </div>
+      <button type="button" class="intro-skip" data-action="dismiss-intro">Pular</button>
+    </div>
   `;
 }
 
@@ -160,17 +187,6 @@ function tplHero(resort, activeSuite, summary) {
       <div class="hero-backdrop" style="background-image: linear-gradient(120deg, rgba(6, 15, 20, 0.72), rgba(5, 12, 18, 0.34)), url('${h(resort.heroImage)}');">
       </div>
       <div class="hero-overlay"></div>
-      ${
-        state.introVisible
-          ? `
-            <div class="hero-intro-badge">
-              <small>${h(resort.seasonLabel)}</small>
-              <strong>${h(resort.name)}</strong>
-              <span>${h(resort.location)}</span>
-            </div>
-          `
-          : ""
-      }
       <div class="hero-grid">
         <div class="hero-content hero-intro-copy">
           <p class="kicker">${h(resort.seasonLabel)}</p>
@@ -211,7 +227,6 @@ function tplHero(resort, activeSuite, summary) {
         <span></span>
         <small>deslize para conhecer</small>
       </div>
-      ${state.introVisible ? `<button type="button" class="intro-skip" data-action="dismiss-intro">Pular</button>` : ""}
     </section>
   `;
 }
@@ -998,6 +1013,13 @@ function syncIntroState() {
   }
   if (!(state.route.name === "buyer" && state.introVisible)) return;
 
+  const introVideo = app.querySelector("[data-intro-video='1']");
+  if (introVideo instanceof HTMLVideoElement) {
+    introVideo.play().catch(() => {});
+    introTimer = window.setTimeout(dismissIntro, 2400);
+    return;
+  }
+
   introTimer = window.setTimeout(dismissIntro, 1800);
 }
 
@@ -1006,16 +1028,14 @@ function dismissIntro() {
   state.introVisible = false;
   sessionStorage.setItem(INTRO_KEY, "1");
   document.body.classList.remove("intro-active");
+  const introOverlay = app.querySelector(".intro-overlay");
+  if (introOverlay instanceof HTMLElement) introOverlay.remove();
   const heroSection = app.querySelector(".hero-section");
   if (heroSection instanceof HTMLElement) {
     heroSection.classList.remove("intro-playing");
     heroSection.classList.add("intro-complete");
     heroSection.classList.add("intro-settled");
   }
-  const skipButton = app.querySelector(".intro-skip");
-  if (skipButton instanceof HTMLElement) skipButton.remove();
-  const introBadge = app.querySelector(".hero-intro-badge");
-  if (introBadge instanceof HTMLElement) introBadge.remove();
   bindReveal();
   syncHeader();
 }
