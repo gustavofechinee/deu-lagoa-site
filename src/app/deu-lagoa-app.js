@@ -5,7 +5,10 @@ import { ensureContent, resetContent, writeContent } from "../utils/storage.js";
 
 const app = document.querySelector("#app");
 const SESSION_KEY = "deu_lagoa_seller_session_v1";
-const INTRO_KEY = "deu_lagoa_intro_seen_v4";
+const INTRO_KEY = "deu_lagoa_intro_seen_v5";
+const INTRO_VIDEO_HOLD_MS = 10000;
+const INTRO_FALLBACK_HOLD_MS = 1900;
+const INTRO_REVEAL_MS = 1150;
 
 const state = {
   content: ensureContent(),
@@ -1009,7 +1012,33 @@ function syncIntroState() {
   if (heroVideo instanceof HTMLVideoElement) heroVideo.play().catch(() => {});
 
   if (!(state.route.name === "buyer" && state.introVisible)) return;
-  introTimer = window.setTimeout(startIntroTransition, heroVideo instanceof HTMLVideoElement ? 2600 : 1900);
+  if (heroVideo instanceof HTMLVideoElement) {
+    scheduleIntroFromVideo(heroVideo);
+    return;
+  }
+  introTimer = window.setTimeout(startIntroTransition, INTRO_FALLBACK_HOLD_MS);
+}
+
+function scheduleIntroFromVideo(heroVideo) {
+  if (heroVideo.dataset.introScheduled === "1") return;
+
+  const schedule = () => {
+    if (heroVideo.dataset.introScheduled === "1") return;
+    heroVideo.dataset.introScheduled = "1";
+    if (introTimer) {
+      window.clearTimeout(introTimer);
+      introTimer = 0;
+    }
+    introTimer = window.setTimeout(startIntroTransition, INTRO_VIDEO_HOLD_MS);
+  };
+
+  if (heroVideo.readyState >= 2 && !heroVideo.paused) {
+    schedule();
+    return;
+  }
+
+  heroVideo.addEventListener("playing", schedule, { once: true });
+  heroVideo.addEventListener("loadeddata", schedule, { once: true });
 }
 
 function startIntroTransition() {
@@ -1030,7 +1059,7 @@ function startIntroTransition() {
   if (header instanceof HTMLElement) header.classList.add("intro-revealing");
   document.body.classList.add("intro-transitioning");
 
-  introExitTimer = window.setTimeout(dismissIntro, 1150);
+  introExitTimer = window.setTimeout(dismissIntro, INTRO_REVEAL_MS);
 }
 
 function dismissIntro() {
