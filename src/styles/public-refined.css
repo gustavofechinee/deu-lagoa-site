@@ -84,8 +84,8 @@ body.intro-active {
 }
 
 .intro-video {
-  transform: scale(1.08);
-  filter: brightness(0.68) saturate(0.94);
+  transform: scale(1.03);
+  filter: brightness(0.92) saturate(1.02);
 }
 
 .intro-image {
@@ -100,8 +100,8 @@ body.intro-active {
 }
 
 .intro-overlay.is-leaving .intro-video {
-  transform: scale(1.16);
-  filter: brightness(0.5) saturate(0.82) blur(8px);
+  transform: scale(1.12);
+  filter: brightness(0.54) saturate(0.84) blur(12px);
 }
 
 .intro-overlay.is-leaving .intro-image {
@@ -111,14 +111,14 @@ body.intro-active {
 
 .intro-overlay-gradient {
   background:
-    linear-gradient(180deg, rgba(4, 11, 13, 0.08) 0%, rgba(4, 11, 13, 0.18) 48%, rgba(4, 11, 13, 0.72) 100%),
-    radial-gradient(circle at 50% 44%, rgba(239, 224, 194, 0.08), transparent 22%);
+    linear-gradient(180deg, rgba(4, 11, 13, 0.02) 0%, rgba(4, 11, 13, 0.08) 58%, rgba(4, 11, 13, 0.22) 100%),
+    radial-gradient(circle at 50% 44%, rgba(239, 224, 194, 0.04), transparent 22%);
   transition: opacity 0.9s var(--ease), filter 0.9s var(--ease);
 }
 
 .intro-overlay.is-leaving .intro-overlay-gradient {
-  opacity: 0.4;
-  filter: blur(8px);
+  opacity: 0.72;
+  filter: blur(10px);
 }
 
 .intro-skip {
