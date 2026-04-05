@@ -8,7 +8,9 @@ const SESSION_KEY = "deu_lagoa_seller_session_v1";
 const INTRO_VIDEO_OFFSET_SECONDS = 1.15;
 const INTRO_VIDEO_HOLD_MS = 10000;
 const INTRO_FALLBACK_HOLD_MS = 1900;
-const INTRO_REVEAL_MS = 4200;
+const INTRO_PRIMARY_REVEAL_MS = 2800;
+const INTRO_SECONDARY_REVEAL_MS = 2200;
+const INTRO_BLUR_REVEAL_MS = 3200;
 
 const state = {
   content: ensureContent(),
@@ -40,6 +42,8 @@ const state = {
 let revealObserver;
 let noticeTimer = 0;
 let introTimer = 0;
+let introSecondaryTimer = 0;
+let introBlurTimer = 0;
 let introExitTimer = 0;
 let scrollFrame = 0;
 let introPlayedThisLoad = false;
@@ -214,50 +218,54 @@ function tplHero(resort, activeSuite, summary) {
       </div>
       <div class="hero-overlay"></div>
       <div class="hero-grid">
-        <div class="hero-content hero-intro-copy">
-          <p class="kicker hero-seq hero-seq-1">${h(resort.seasonLabel)}</p>
-          <h1 class="hero-heading">
-            ${heroTitleLines
-              .map((line, index) => `<span class="hero-title-line hero-seq hero-seq-${index + 2}">${h(line)}</span>`)
-              .join("")}
-          </h1>
-          <div class="hero-lead">
-            ${heroCopyLines
-              .map((line, index) => `<span class="hero-copy-line hero-seq hero-seq-${index + 4}">${h(line)}</span>`)
-              .join("")}
+        <div class="hero-content">
+          <div class="hero-intro-copy hero-intro-primary">
+            <p class="kicker hero-primary-seq hero-primary-1">${h(resort.seasonLabel)}</p>
+            <h1 class="hero-heading">
+              ${heroTitleLines
+                .map((line, index) => `<span class="hero-title-line hero-primary-seq hero-primary-${index + 2}">${h(line)}</span>`)
+                .join("")}
+            </h1>
+            <div class="hero-lead">
+              ${heroCopyLines
+                .map((line, index) => `<span class="hero-copy-line hero-primary-seq hero-primary-${index + 6}">${h(line)}</span>`)
+                .join("")}
+            </div>
           </div>
-          <div class="hero-action-row hero-seq hero-seq-6">
-            <a class="button-primary" href="#reserva">Consultar disponibilidade</a>
-            <a class="button-secondary" href="${h(getPrimaryContactHref())}" target="_blank" rel="noreferrer noopener">${h(getPrimaryContactLabel())}</a>
-          </div>
-          <div class="hero-proof-strip hero-seq hero-seq-7">
-            <span>hotel & restaurante</span>
-            <span>reserva direta</span>
-            <span>Uruaú, Ceará</span>
+          <div class="hero-content-secondary hero-intro-copy hero-intro-secondary">
+            <div class="hero-action-row hero-secondary-seq hero-secondary-1">
+              <a class="button-primary" href="#reserva">Consultar disponibilidade</a>
+              <a class="button-secondary" href="${h(getPrimaryContactHref())}" target="_blank" rel="noreferrer noopener">${h(getPrimaryContactLabel())}</a>
+            </div>
+            <div class="hero-proof-strip hero-secondary-seq hero-secondary-2">
+              <span>hotel & restaurante</span>
+              <span>reserva direta</span>
+              <span>Uruaú, Ceará</span>
+            </div>
           </div>
         </div>
-        <aside class="hero-aside hero-intro-copy">
-          <div class="hero-aside-block hero-seq hero-seq-3">
+        <aside class="hero-aside hero-intro-copy hero-intro-secondary">
+          <div class="hero-aside-block hero-secondary-seq hero-secondary-1">
             <span>destino</span>
             <strong>${h(resort.location)}</strong>
           </div>
-          <div class="hero-aside-block hero-seq hero-seq-4">
+          <div class="hero-aside-block hero-secondary-seq hero-secondary-2">
             <span>check-in</span>
             <strong>${h(resort.checkIn)}</strong>
           </div>
-          <div class="hero-aside-block hero-seq hero-seq-5">
+          <div class="hero-aside-block hero-secondary-seq hero-secondary-3">
             <span>check-out</span>
             <strong>${h(resort.checkOut)}</strong>
           </div>
-          <div class="hero-aside-block hero-aside-block-featured hero-seq hero-seq-6">
+          <div class="hero-aside-block hero-aside-block-featured hero-secondary-seq hero-secondary-4">
             <span>perfil oficial</span>
             <strong>${h(resort.instagramHandle)}</strong>
             <small>reservas e mais informações por atendimento direto</small>
           </div>
-          <a class="hero-aside-link hero-seq hero-seq-7" href="#instagram">Ver imagens da casa</a>
+          <a class="hero-aside-link hero-secondary-seq hero-secondary-5" href="#instagram">Ver imagens da casa</a>
         </aside>
       </div>
-      <div class="hero-scroll-indicator hero-intro-copy hero-seq hero-seq-8">
+      <div class="hero-scroll-indicator hero-intro-copy hero-intro-blur">
         <span></span>
         <small>deslize para conhecer</small>
       </div>
@@ -1045,6 +1053,14 @@ function syncIntroState() {
     window.clearTimeout(introTimer);
     introTimer = 0;
   }
+  if (introSecondaryTimer) {
+    window.clearTimeout(introSecondaryTimer);
+    introSecondaryTimer = 0;
+  }
+  if (introBlurTimer) {
+    window.clearTimeout(introBlurTimer);
+    introBlurTimer = 0;
+  }
   if (introExitTimer) {
     window.clearTimeout(introExitTimer);
     introExitTimer = 0;
@@ -1105,26 +1121,69 @@ function startIntroTransition() {
   const header = app.querySelector(".site-header");
 
   if (heroSection instanceof HTMLElement) {
-    heroSection.classList.add("intro-revealing");
+    heroSection.classList.add("intro-primary");
   }
-  if (header instanceof HTMLElement) header.classList.add("intro-revealing");
   document.body.classList.add("intro-transitioning");
+  document.body.classList.add("intro-primary");
 
-  introExitTimer = window.setTimeout(dismissIntro, INTRO_REVEAL_MS);
+  introSecondaryTimer = window.setTimeout(startIntroSecondaryPhase, INTRO_PRIMARY_REVEAL_MS);
+  introBlurTimer = window.setTimeout(startIntroBlurPhase, INTRO_PRIMARY_REVEAL_MS + INTRO_SECONDARY_REVEAL_MS);
+  introExitTimer = window.setTimeout(dismissIntro, INTRO_PRIMARY_REVEAL_MS + INTRO_SECONDARY_REVEAL_MS + INTRO_BLUR_REVEAL_MS);
+
+  if (header instanceof HTMLElement) header.classList.remove("intro-revealing");
+}
+
+function startIntroSecondaryPhase() {
+  if (!(state.route.name === "buyer" && state.introVisible)) return;
+  const heroSection = app.querySelector(".hero-section");
+  const header = app.querySelector(".site-header");
+
+  document.body.classList.add("intro-secondary");
+  if (heroSection instanceof HTMLElement) heroSection.classList.add("intro-secondary");
+  if (header instanceof HTMLElement) header.classList.add("intro-revealing");
+}
+
+function startIntroBlurPhase() {
+  if (!(state.route.name === "buyer" && state.introVisible)) return;
+  const heroSection = app.querySelector(".hero-section");
+
+  document.body.classList.add("intro-blurring");
+  if (heroSection instanceof HTMLElement) heroSection.classList.add("intro-blurring");
 }
 
 function dismissIntro() {
   if (!state.introVisible) return;
+  if (introTimer) {
+    window.clearTimeout(introTimer);
+    introTimer = 0;
+  }
+  if (introSecondaryTimer) {
+    window.clearTimeout(introSecondaryTimer);
+    introSecondaryTimer = 0;
+  }
+  if (introBlurTimer) {
+    window.clearTimeout(introBlurTimer);
+    introBlurTimer = 0;
+  }
+  if (introExitTimer) {
+    window.clearTimeout(introExitTimer);
+    introExitTimer = 0;
+  }
   state.introVisible = false;
   introPlayedThisLoad = true;
   document.body.classList.remove("intro-active");
   document.body.classList.remove("intro-transitioning");
+  document.body.classList.remove("intro-primary");
+  document.body.classList.remove("intro-secondary");
+  document.body.classList.remove("intro-blurring");
   const header = app.querySelector(".site-header");
   if (header instanceof HTMLElement) header.classList.remove("intro-revealing");
   const heroSection = app.querySelector(".hero-section");
   if (heroSection instanceof HTMLElement) {
     heroSection.classList.remove("intro-playing");
-    heroSection.classList.remove("intro-revealing");
+    heroSection.classList.remove("intro-primary");
+    heroSection.classList.remove("intro-secondary");
+    heroSection.classList.remove("intro-blurring");
     heroSection.classList.add("intro-complete");
     heroSection.classList.add("intro-settled");
   }
@@ -1336,7 +1395,7 @@ function onClick(event) {
 
   const dismissIntroTrigger = event.target.closest('[data-action="dismiss-intro"]');
   if (dismissIntroTrigger) {
-    startIntroTransition();
+    dismissIntro();
     return;
   }
 
@@ -1848,7 +1907,7 @@ function onKeydown(event) {
   }
 
   if (event.key === "Escape" && state.introVisible) {
-    startIntroTransition();
+    dismissIntro();
     return;
   }
 

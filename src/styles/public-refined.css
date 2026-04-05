@@ -142,7 +142,7 @@ body.intro-active {
   color: inherit;
 }
 
-body.intro-active .site-header {
+body.intro-active:not(.intro-secondary) .site-header {
   opacity: 0;
   transform: translateY(-26px);
   pointer-events: none;
@@ -151,9 +151,9 @@ body.intro-active .site-header {
     transform 2.4s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-body.intro-active:not(.intro-transitioning) .page-main > :not(.hero-section),
-body.intro-active:not(.intro-transitioning) .mobile-dock,
-body.intro-active:not(.intro-transitioning) .site-footer {
+body.intro-active:not(.intro-blurring) .page-main > :not(.hero-section),
+body.intro-active:not(.intro-blurring) .mobile-dock,
+body.intro-active:not(.intro-blurring) .site-footer {
   opacity: 0;
   visibility: visible;
   transform: translateY(40px);
@@ -171,7 +171,7 @@ body.intro-active .site-footer {
 .site-header.intro-revealing {
   opacity: 0;
   transform: translateY(-26px);
-  animation: headerIntroIn 2.2s cubic-bezier(0.22, 1, 0.36, 1) 1.25s forwards;
+  animation: headerIntroIn 1.8s cubic-bezier(0.22, 1, 0.36, 1) 0.18s forwards;
   pointer-events: auto;
 }
 
@@ -362,19 +362,19 @@ body.intro-active .site-footer {
     backdrop-filter 3.8s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.hero-section.intro-revealing .hero-blur-film,
+.hero-section.intro-blurring .hero-blur-film,
 .hero-section.intro-complete .hero-blur-film {
   opacity: 1;
   backdrop-filter: blur(14px) saturate(0.78) brightness(0.62);
 }
 
-.hero-section.intro-revealing .hero-video,
+.hero-section.intro-blurring .hero-video,
 .hero-section.intro-complete .hero-video {
   transform: translate3d(0, calc(var(--hero-progress, 0) * -18px), 0) scale(1.15);
   filter: brightness(0.46) saturate(0.82) blur(12px);
 }
 
-.hero-section.intro-revealing .hero-image,
+.hero-section.intro-blurring .hero-image,
 .hero-section.intro-complete .hero-image {
   opacity: 0.16;
 }
@@ -403,7 +403,9 @@ body.intro-active .site-footer {
   padding-bottom: 1.2rem;
 }
 
-body.intro-active:not(.intro-transitioning) .hero-intro-copy {
+body.intro-active:not(.intro-primary) .hero-intro-primary,
+body.intro-active:not(.intro-secondary) .hero-intro-secondary,
+body.intro-active:not(.intro-blurring) .hero-intro-blur {
   opacity: 0;
   visibility: visible;
   transform: translateY(42px);
@@ -418,17 +420,25 @@ body.intro-active:not(.intro-transitioning) .hero-intro-copy {
     filter 2.4s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.hero-seq {
+.hero-primary-seq,
+.hero-secondary-seq {
   opacity: 0;
   transform: translateY(28px);
 }
 
-.hero-section.intro-revealing .hero-seq,
-.hero-section.intro-settled .hero-seq {
-  animation: heroIntroCopyIn 1.8s cubic-bezier(0.22, 1, 0.36, 1) both;
+.hero-section.intro-primary .hero-primary-seq,
+.hero-section.intro-secondary .hero-primary-seq,
+.hero-section.intro-blurring .hero-primary-seq,
+.hero-section.intro-settled .hero-primary-seq {
+  animation: heroIntroCopyIn 1.15s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-.hero-section.intro-revealing .hero-intro-copy,
+.hero-section.intro-primary .hero-intro-primary,
+.hero-section.intro-secondary .hero-intro-primary,
+.hero-section.intro-secondary .hero-intro-secondary,
+.hero-section.intro-blurring .hero-intro-primary,
+.hero-section.intro-blurring .hero-intro-secondary,
+.hero-section.intro-blurring .hero-intro-blur,
 .hero-section.intro-settled .hero-intro-copy {
   opacity: 1;
   transform: translateY(0);
@@ -437,59 +447,97 @@ body.intro-active:not(.intro-transitioning) .hero-intro-copy {
   pointer-events: auto;
 }
 
-.hero-section.intro-revealing .hero-seq-1,
-.hero-section.intro-settled .hero-seq-1 {
-  animation-delay: 0.45s;
+.hero-section.intro-primary .hero-primary-1,
+.hero-section.intro-secondary .hero-primary-1,
+.hero-section.intro-blurring .hero-primary-1,
+.hero-section.intro-settled .hero-primary-1 {
+  animation-delay: 0.18s;
 }
 
-.hero-section.intro-revealing .hero-seq-2,
-.hero-section.intro-settled .hero-seq-2 {
-  animation-delay: 0.78s;
+.hero-section.intro-primary .hero-primary-2,
+.hero-section.intro-secondary .hero-primary-2,
+.hero-section.intro-blurring .hero-primary-2,
+.hero-section.intro-settled .hero-primary-2 {
+  animation-delay: 0.48s;
 }
 
-.hero-section.intro-revealing .hero-seq-3,
-.hero-section.intro-settled .hero-seq-3 {
-  animation-delay: 1.1s;
+.hero-section.intro-primary .hero-primary-3,
+.hero-section.intro-secondary .hero-primary-3,
+.hero-section.intro-blurring .hero-primary-3,
+.hero-section.intro-settled .hero-primary-3 {
+  animation-delay: 0.8s;
 }
 
-.hero-section.intro-revealing .hero-seq-4,
-.hero-section.intro-settled .hero-seq-4 {
-  animation-delay: 1.42s;
+.hero-section.intro-primary .hero-primary-4,
+.hero-section.intro-secondary .hero-primary-4,
+.hero-section.intro-blurring .hero-primary-4,
+.hero-section.intro-settled .hero-primary-4 {
+  animation-delay: 1.12s;
 }
 
-.hero-section.intro-revealing .hero-seq-5,
-.hero-section.intro-settled .hero-seq-5 {
-  animation-delay: 1.74s;
+.hero-section.intro-primary .hero-primary-5,
+.hero-section.intro-secondary .hero-primary-5,
+.hero-section.intro-blurring .hero-primary-5,
+.hero-section.intro-settled .hero-primary-5 {
+  animation-delay: 1.44s;
 }
 
-.hero-section.intro-revealing .hero-seq-6,
-.hero-section.intro-settled .hero-seq-6 {
-  animation-delay: 2.06s;
+.hero-section.intro-primary .hero-primary-6,
+.hero-section.intro-secondary .hero-primary-6,
+.hero-section.intro-blurring .hero-primary-6,
+.hero-section.intro-settled .hero-primary-6 {
+  animation-delay: 1.8s;
 }
 
-.hero-section.intro-revealing .hero-seq-7,
-.hero-section.intro-settled .hero-seq-7 {
-  animation-delay: 2.38s;
+.hero-section.intro-primary .hero-primary-7,
+.hero-section.intro-secondary .hero-primary-7,
+.hero-section.intro-blurring .hero-primary-7,
+.hero-section.intro-settled .hero-primary-7 {
+  animation-delay: 2.12s;
 }
 
-.hero-section.intro-revealing .hero-seq-8,
-.hero-section.intro-settled .hero-seq-8 {
-  animation-delay: 2.7s;
+.hero-section.intro-secondary .hero-secondary-seq,
+.hero-section.intro-blurring .hero-secondary-seq,
+.hero-section.intro-settled .hero-secondary-seq {
+  animation: heroIntroCopyIn 1.05s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-body.intro-active:not(.intro-transitioning) .hero-scroll-indicator.hero-intro-copy {
-  opacity: 0;
-  visibility: visible;
-  transform: translateY(30px);
-  pointer-events: none;
+.hero-section.intro-secondary .hero-secondary-1,
+.hero-section.intro-blurring .hero-secondary-1,
+.hero-section.intro-settled .hero-secondary-1 {
+  animation-delay: 0.18s;
 }
 
-.hero-section.intro-revealing .hero-scroll-indicator.hero-intro-copy,
-.hero-section.intro-settled .hero-scroll-indicator.hero-intro-copy {
+.hero-section.intro-secondary .hero-secondary-2,
+.hero-section.intro-blurring .hero-secondary-2,
+.hero-section.intro-settled .hero-secondary-2 {
+  animation-delay: 0.46s;
+}
+
+.hero-section.intro-secondary .hero-secondary-3,
+.hero-section.intro-blurring .hero-secondary-3,
+.hero-section.intro-settled .hero-secondary-3 {
+  animation-delay: 0.74s;
+}
+
+.hero-section.intro-secondary .hero-secondary-4,
+.hero-section.intro-blurring .hero-secondary-4,
+.hero-section.intro-settled .hero-secondary-4 {
+  animation-delay: 1.02s;
+}
+
+.hero-section.intro-secondary .hero-secondary-5,
+.hero-section.intro-blurring .hero-secondary-5,
+.hero-section.intro-settled .hero-secondary-5 {
+  animation-delay: 1.3s;
+}
+
+.hero-section.intro-blurring .hero-scroll-indicator.hero-intro-blur,
+.hero-section.intro-settled .hero-scroll-indicator.hero-intro-blur {
   visibility: visible;
   animation:
-    heroIntroCopyIn 1.8s cubic-bezier(0.22, 1, 0.36, 1) 3s both,
-    scrollPromptFloat 1.8s ease-in-out 4.3s infinite;
+    heroIntroCopyIn 1.2s cubic-bezier(0.22, 1, 0.36, 1) 0.5s both,
+    scrollPromptFloat 1.8s ease-in-out 2.1s infinite;
 }
 
 .hero-content h1 {
@@ -516,6 +564,10 @@ body.intro-active:not(.intro-transitioning) .hero-scroll-indicator.hero-intro-co
   gap: 0.55rem;
   font-size: 1.05rem;
   line-height: 1.75;
+}
+
+.hero-content-secondary {
+  margin-top: 1.9rem;
 }
 
 .hero-action-row {
