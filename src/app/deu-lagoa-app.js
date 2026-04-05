@@ -5,11 +5,10 @@ import { ensureContent, resetContent, writeContent } from "../utils/storage.js";
 
 const app = document.querySelector("#app");
 const SESSION_KEY = "deu_lagoa_seller_session_v1";
-const INTRO_KEY = "deu_lagoa_intro_seen_v5";
 const INTRO_VIDEO_OFFSET_SECONDS = 1.15;
 const INTRO_VIDEO_HOLD_MS = 10000;
 const INTRO_FALLBACK_HOLD_MS = 1900;
-const INTRO_REVEAL_MS = 2600;
+const INTRO_REVEAL_MS = 4200;
 
 const state = {
   content: ensureContent(),
@@ -43,6 +42,7 @@ let noticeTimer = 0;
 let introTimer = 0;
 let introExitTimer = 0;
 let scrollFrame = 0;
+let introPlayedThisLoad = false;
 
 init();
 
@@ -210,6 +210,7 @@ function tplHero(resort, activeSuite, summary) {
         }
         <div class="hero-image ${resort.featureVideo ? "has-video" : ""}" style="background-image: linear-gradient(120deg, rgba(6, 15, 20, 0.72), rgba(5, 12, 18, 0.34)), url('${h(resort.heroImage)}');">
         </div>
+        <div class="hero-blur-film" aria-hidden="true"></div>
       </div>
       <div class="hero-overlay"></div>
       <div class="hero-grid">
@@ -1035,7 +1036,7 @@ function tplNotice() {
 }
 
 function shouldShowIntro() {
-  return parseRoute().name === "buyer" && sessionStorage.getItem(INTRO_KEY) !== "1";
+  return parseRoute().name === "buyer" && !introPlayedThisLoad;
 }
 
 function syncIntroState() {
@@ -1065,24 +1066,12 @@ function syncIntroState() {
 
 function scheduleIntroFromVideo(heroVideo) {
   if (heroVideo.dataset.introScheduled === "1") return;
-
-  const schedule = () => {
-    if (heroVideo.dataset.introScheduled === "1") return;
-    heroVideo.dataset.introScheduled = "1";
-    if (introTimer) {
-      window.clearTimeout(introTimer);
-      introTimer = 0;
-    }
-    introTimer = window.setTimeout(startIntroTransition, INTRO_VIDEO_HOLD_MS);
-  };
-
-  if (heroVideo.readyState >= 2 && !heroVideo.paused) {
-    schedule();
-    return;
+  heroVideo.dataset.introScheduled = "1";
+  if (introTimer) {
+    window.clearTimeout(introTimer);
+    introTimer = 0;
   }
-
-  heroVideo.addEventListener("playing", schedule, { once: true });
-  heroVideo.addEventListener("loadeddata", schedule, { once: true });
+  introTimer = window.setTimeout(startIntroTransition, INTRO_VIDEO_HOLD_MS);
 }
 
 function primeIntroVideo(heroVideo) {
@@ -1127,7 +1116,7 @@ function startIntroTransition() {
 function dismissIntro() {
   if (!state.introVisible) return;
   state.introVisible = false;
-  sessionStorage.setItem(INTRO_KEY, "1");
+  introPlayedThisLoad = true;
   document.body.classList.remove("intro-active");
   document.body.classList.remove("intro-transitioning");
   const header = app.querySelector(".site-header");
