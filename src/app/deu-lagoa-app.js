@@ -5,7 +5,7 @@ import { ensureContent, resetContent, writeContent } from "../utils/storage.js";
 
 const app = document.querySelector("#app");
 const SESSION_KEY = "deu_lagoa_seller_session_v1";
-const INTRO_KEY = "deu_lagoa_intro_seen_v3";
+const INTRO_KEY = "deu_lagoa_intro_seen_v4";
 
 const state = {
   content: ensureContent(),
@@ -111,7 +111,6 @@ function tplBuyerPage() {
   return `
     ${tplBuyerHeader()}
     <main class="page-main">
-      ${tplIntroOverlay(resort)}
       ${tplHero(resort, activeSuite, summary)}
       ${tplBrandStory(resort)}
       ${tplExperienceGrid()}
@@ -124,27 +123,6 @@ function tplBuyerPage() {
     </main>
     ${tplMobileDock()}
     ${tplSiteFooter()}
-  `;
-}
-
-function tplIntroOverlay(resort) {
-  if (!state.introVisible) return "";
-  return `
-    <div class="intro-overlay" data-intro-overlay="1" aria-label="Abertura da Deu Lagoa Uruaú">
-      <div class="intro-overlay-media">
-        ${
-          resort.featureVideo
-            ? `
-              <video class="intro-video" data-intro-video="1" autoplay muted playsinline preload="auto" poster="${h(resort.featureVideoPoster || resort.heroImage)}">
-                <source src="${h(resort.featureVideo)}" type="video/mp4" />
-              </video>
-            `
-            : `<img class="intro-image" src="${h(resort.heroImage)}" alt="${h(resort.name)}" />`
-        }
-      </div>
-      <div class="intro-overlay-gradient"></div>
-      <button type="button" class="intro-skip" data-action="dismiss-intro">Pular</button>
-    </div>
   `;
 }
 
@@ -183,6 +161,7 @@ function tplBuyerHeader() {
 function tplHero(resort, activeSuite, summary) {
   return `
     <section class="hero-section ${state.introVisible ? "intro-playing" : "intro-complete"}" id="topo">
+      ${state.introVisible ? `<button type="button" class="intro-skip hero-intro-skip" data-action="dismiss-intro">Pular</button>` : ""}
       <div class="hero-backdrop">
         ${
           resort.featureVideo
@@ -1030,15 +1009,7 @@ function syncIntroState() {
   if (heroVideo instanceof HTMLVideoElement) heroVideo.play().catch(() => {});
 
   if (!(state.route.name === "buyer" && state.introVisible)) return;
-
-  const introVideo = app.querySelector("[data-intro-video='1']");
-  if (introVideo instanceof HTMLVideoElement) {
-    introVideo.play().catch(() => {});
-    introTimer = window.setTimeout(startIntroTransition, 2800);
-    return;
-  }
-
-  introTimer = window.setTimeout(startIntroTransition, 1900);
+  introTimer = window.setTimeout(startIntroTransition, heroVideo instanceof HTMLVideoElement ? 2600 : 1900);
 }
 
 function startIntroTransition() {
@@ -1049,11 +1020,9 @@ function startIntroTransition() {
     introTimer = 0;
   }
 
-  const introOverlay = app.querySelector(".intro-overlay");
   const heroSection = app.querySelector(".hero-section");
   const header = app.querySelector(".site-header");
 
-  if (introOverlay instanceof HTMLElement) introOverlay.classList.add("is-leaving");
   if (heroSection instanceof HTMLElement) {
     heroSection.classList.add("intro-revealing");
     heroSection.classList.add("intro-complete");
@@ -1070,8 +1039,6 @@ function dismissIntro() {
   sessionStorage.setItem(INTRO_KEY, "1");
   document.body.classList.remove("intro-active");
   document.body.classList.remove("intro-transitioning");
-  const introOverlay = app.querySelector(".intro-overlay");
-  if (introOverlay instanceof HTMLElement) introOverlay.remove();
   const header = app.querySelector(".site-header");
   if (header instanceof HTMLElement) header.classList.remove("intro-revealing");
   const heroSection = app.querySelector(".hero-section");
