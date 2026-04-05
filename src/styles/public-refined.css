@@ -144,21 +144,34 @@ body.intro-active {
 
 body.intro-active .site-header {
   opacity: 0;
-  transform: translateY(-18px);
+  transform: translateY(-26px);
   pointer-events: none;
+  transition:
+    opacity 1.6s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 1.6s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 body.intro-active:not(.intro-transitioning) .page-main > :not(.hero-section),
 body.intro-active:not(.intro-transitioning) .mobile-dock,
 body.intro-active:not(.intro-transitioning) .site-footer {
   opacity: 0;
-  visibility: hidden;
+  visibility: visible;
+  transform: translateY(40px);
+  pointer-events: none;
+}
+
+body.intro-active .page-main > :not(.hero-section),
+body.intro-active .mobile-dock,
+body.intro-active .site-footer {
+  transition:
+    opacity 1.8s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 1.8s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .site-header.intro-revealing {
   opacity: 0;
-  transform: translateY(-18px);
-  animation: headerIntroIn 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) 0.08s forwards;
+  transform: translateY(-26px);
+  animation: headerIntroIn 1.45s cubic-bezier(0.22, 1, 0.36, 1) 0.62s forwards;
   pointer-events: auto;
 }
 
@@ -302,9 +315,9 @@ body.intro-active:not(.intro-transitioning) .site-footer {
   transform: translate3d(0, calc(var(--hero-progress, 0) * -18px), 0) scale(1.03);
   filter: brightness(0.96) saturate(1.02) blur(0);
   transition:
-    transform 1.2s var(--ease),
-    filter 1.2s var(--ease),
-    opacity 1.2s var(--ease);
+    transform 2.4s cubic-bezier(0.22, 1, 0.36, 1),
+    filter 2.4s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 2.4s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .hero-image {
@@ -313,6 +326,10 @@ body.intro-active:not(.intro-transitioning) .site-footer {
   filter: saturate(0.9) contrast(1.02) brightness(0.82);
   transform: scale(calc(1.03 + (var(--hero-progress, 0) * 0.03)));
   animation: slowDrift 22s ease-in-out infinite;
+  transition:
+    opacity 2.2s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 2.2s cubic-bezier(0.22, 1, 0.36, 1),
+    filter 2.2s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .hero-image.has-video {
@@ -348,6 +365,9 @@ body.intro-active:not(.intro-transitioning) .site-footer {
   background:
     linear-gradient(90deg, rgba(4, 11, 13, 0.86) 0%, rgba(4, 11, 13, 0.42) 38%, rgba(4, 11, 13, 0.18) 62%, rgba(4, 11, 13, 0.78) 100%),
     linear-gradient(180deg, rgba(4, 11, 13, 0.12) 0%, rgba(4, 11, 13, 0.18) 42%, rgba(4, 11, 13, 0.92) 100%);
+  transition:
+    background 2.2s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 2.2s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .hero-grid {
@@ -367,9 +387,17 @@ body.intro-active:not(.intro-transitioning) .site-footer {
 
 body.intro-active:not(.intro-transitioning) .hero-intro-copy {
   opacity: 0;
-  visibility: hidden;
-  transform: translateY(24px);
+  visibility: visible;
+  transform: translateY(42px);
+  filter: blur(10px);
   pointer-events: none;
+}
+
+.hero-intro-copy {
+  transition:
+    opacity 1.6s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 1.6s cubic-bezier(0.22, 1, 0.36, 1),
+    filter 1.6s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .hero-seq {
@@ -379,49 +407,62 @@ body.intro-active:not(.intro-transitioning) .hero-intro-copy {
 
 .hero-section.intro-revealing .hero-seq,
 .hero-section.intro-settled .hero-seq {
-  animation: heroIntroCopyIn 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  animation: heroIntroCopyIn 1.15s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .hero-section.intro-revealing .hero-intro-copy,
 .hero-section.intro-settled .hero-intro-copy {
+  opacity: 1;
+  transform: translateY(0);
+  filter: blur(0);
   visibility: visible;
   pointer-events: auto;
 }
 
 .hero-section.intro-revealing .hero-seq-1,
 .hero-section.intro-settled .hero-seq-1 {
-  animation-delay: 0.04s;
+  animation-delay: 0.34s;
 }
 
 .hero-section.intro-revealing .hero-seq-2,
 .hero-section.intro-settled .hero-seq-2 {
-  animation-delay: 0.14s;
+  animation-delay: 0.48s;
 }
 
 .hero-section.intro-revealing .hero-seq-3,
 .hero-section.intro-settled .hero-seq-3 {
-  animation-delay: 0.26s;
+  animation-delay: 0.62s;
 }
 
 .hero-section.intro-revealing .hero-seq-4,
 .hero-section.intro-settled .hero-seq-4 {
-  animation-delay: 0.38s;
+  animation-delay: 0.76s;
 }
 
 .hero-section.intro-revealing .hero-seq-5,
 .hero-section.intro-settled .hero-seq-5 {
-  animation-delay: 0.5s;
+  animation-delay: 0.9s;
 }
 
 .hero-section.intro-revealing .hero-seq-6,
 .hero-section.intro-settled .hero-seq-6 {
-  animation-delay: 0.64s;
+  animation-delay: 1.24s;
+}
+
+.hero-section.intro-revealing .hero-seq-7,
+.hero-section.intro-settled .hero-seq-7 {
+  animation-delay: 1.42s;
+}
+
+.hero-section.intro-revealing .hero-seq-8,
+.hero-section.intro-settled .hero-seq-8 {
+  animation-delay: 1.6s;
 }
 
 body.intro-active:not(.intro-transitioning) .hero-scroll-indicator.hero-intro-copy {
   opacity: 0;
-  visibility: hidden;
-  transform: translateY(18px);
+  visibility: visible;
+  transform: translateY(30px);
   pointer-events: none;
 }
 
@@ -429,20 +470,32 @@ body.intro-active:not(.intro-transitioning) .hero-scroll-indicator.hero-intro-co
 .hero-section.intro-settled .hero-scroll-indicator.hero-intro-copy {
   visibility: visible;
   animation:
-    heroIntroCopyIn 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) 0.64s both,
-    scrollPromptFloat 1.8s ease-in-out 1.3s infinite;
+    heroIntroCopyIn 1.15s cubic-bezier(0.22, 1, 0.36, 1) 1.72s both,
+    scrollPromptFloat 1.8s ease-in-out 2.95s infinite;
 }
 
 .hero-content h1 {
-  max-width: 8.4ch;
+  max-width: 9.1ch;
   font-size: clamp(4.3rem, 7vw, 6.8rem);
   line-height: 0.9;
   text-shadow: 0 20px 50px rgba(0, 0, 0, 0.18);
 }
 
+.hero-heading {
+  display: grid;
+  gap: 0.1em;
+}
+
+.hero-title-line,
+.hero-copy-line {
+  display: block;
+}
+
 .hero-lead {
   max-width: 35ch;
   margin-top: 1.15rem;
+  display: grid;
+  gap: 0.55rem;
   font-size: 1.05rem;
   line-height: 1.75;
 }
@@ -1243,7 +1296,7 @@ body.intro-active:not(.intro-transitioning) .hero-scroll-indicator.hero-intro-co
   }
 
   .hero-content h1 {
-    max-width: 8.6ch;
+    max-width: 8.7ch;
   }
 
   .story-feature {
@@ -1285,7 +1338,7 @@ body.intro-active:not(.intro-transitioning) .hero-scroll-indicator.hero-intro-co
 
   .hero-content h1 {
     font-size: clamp(2.95rem, 14vw, 4.35rem);
-    max-width: 8.1ch;
+    max-width: 7.8ch;
   }
 
   .hero-lead {

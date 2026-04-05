@@ -6,9 +6,10 @@ import { ensureContent, resetContent, writeContent } from "../utils/storage.js";
 const app = document.querySelector("#app");
 const SESSION_KEY = "deu_lagoa_seller_session_v1";
 const INTRO_KEY = "deu_lagoa_intro_seen_v5";
+const INTRO_VIDEO_OFFSET_SECONDS = 1.15;
 const INTRO_VIDEO_HOLD_MS = 10000;
 const INTRO_FALLBACK_HOLD_MS = 1900;
-const INTRO_REVEAL_MS = 1150;
+const INTRO_REVEAL_MS = 2600;
 
 const state = {
   content: ensureContent(),
@@ -161,7 +162,39 @@ function tplBuyerHeader() {
   `;
 }
 
+function splitHeroTitle(title, explicitLines = []) {
+  if (Array.isArray(explicitLines) && explicitLines.length) {
+    return explicitLines.map((line) => String(line || "").trim()).filter(Boolean);
+  }
+
+  const normalized = String(title || "").trim();
+  if (!normalized) return [];
+
+  for (const divider of [" à ", " na ", " no "]) {
+    if (normalized.includes(divider)) {
+      const [lead, ...rest] = normalized.split(divider);
+      const tail = rest.join(divider).trim();
+      return [lead.trim(), `${divider.trim()} ${tail}`.trim()];
+    }
+  }
+
+  const words = normalized.split(/\s+/).filter(Boolean);
+  if (words.length < 5) return [normalized];
+  const midpoint = Math.ceil(words.length / 2);
+  return [words.slice(0, midpoint).join(" "), words.slice(midpoint).join(" ")];
+}
+
+function splitHeroCopy(copy) {
+  return String(copy || "")
+    .split(/(?<=[.!?])\s+/)
+    .map((part) => part.trim())
+    .filter(Boolean);
+}
+
 function tplHero(resort, activeSuite, summary) {
+  const heroTitleLines = splitHeroTitle(resort.heroTitle, resort.heroTitleLines);
+  const heroCopyLines = splitHeroCopy(resort.heroCopy);
+
   return `
     <section class="hero-section ${state.introVisible ? "intro-playing" : "intro-complete"}" id="topo">
       ${state.introVisible ? `<button type="button" class="intro-skip hero-intro-skip" data-action="dismiss-intro">Pular</button>` : ""}
@@ -182,40 +215,48 @@ function tplHero(resort, activeSuite, summary) {
       <div class="hero-grid">
         <div class="hero-content hero-intro-copy">
           <p class="kicker hero-seq hero-seq-1">${h(resort.seasonLabel)}</p>
-          <h1 class="hero-seq hero-seq-2">${h(resort.heroTitle)}</h1>
-          <p class="hero-lead hero-seq hero-seq-3">${h(resort.heroCopy)}</p>
-          <div class="hero-action-row hero-seq hero-seq-4">
+          <h1 class="hero-heading">
+            ${heroTitleLines
+              .map((line, index) => `<span class="hero-title-line hero-seq hero-seq-${index + 2}">${h(line)}</span>`)
+              .join("")}
+          </h1>
+          <div class="hero-lead">
+            ${heroCopyLines
+              .map((line, index) => `<span class="hero-copy-line hero-seq hero-seq-${index + 4}">${h(line)}</span>`)
+              .join("")}
+          </div>
+          <div class="hero-action-row hero-seq hero-seq-6">
             <a class="button-primary" href="#reserva">Consultar disponibilidade</a>
             <a class="button-secondary" href="${h(getPrimaryContactHref())}" target="_blank" rel="noreferrer noopener">${h(getPrimaryContactLabel())}</a>
           </div>
-          <div class="hero-proof-strip hero-seq hero-seq-5">
+          <div class="hero-proof-strip hero-seq hero-seq-7">
             <span>hotel & restaurante</span>
             <span>reserva direta</span>
             <span>Uruaú, Ceará</span>
           </div>
         </div>
         <aside class="hero-aside hero-intro-copy">
-          <div class="hero-aside-block hero-seq hero-seq-1">
+          <div class="hero-aside-block hero-seq hero-seq-3">
             <span>destino</span>
             <strong>${h(resort.location)}</strong>
           </div>
-          <div class="hero-aside-block hero-seq hero-seq-2">
+          <div class="hero-aside-block hero-seq hero-seq-4">
             <span>check-in</span>
             <strong>${h(resort.checkIn)}</strong>
           </div>
-          <div class="hero-aside-block hero-seq hero-seq-3">
+          <div class="hero-aside-block hero-seq hero-seq-5">
             <span>check-out</span>
             <strong>${h(resort.checkOut)}</strong>
           </div>
-          <div class="hero-aside-block hero-aside-block-featured hero-seq hero-seq-4">
+          <div class="hero-aside-block hero-aside-block-featured hero-seq hero-seq-6">
             <span>perfil oficial</span>
             <strong>${h(resort.instagramHandle)}</strong>
             <small>reservas e mais informações por atendimento direto</small>
           </div>
-          <a class="hero-aside-link hero-seq hero-seq-5" href="#instagram">Ver imagens da casa</a>
+          <a class="hero-aside-link hero-seq hero-seq-7" href="#instagram">Ver imagens da casa</a>
         </aside>
       </div>
-      <div class="hero-scroll-indicator hero-intro-copy hero-seq hero-seq-6">
+      <div class="hero-scroll-indicator hero-intro-copy hero-seq hero-seq-8">
         <span></span>
         <small>deslize para conhecer</small>
       </div>
@@ -1009,7 +1050,10 @@ function syncIntroState() {
   }
 
   const heroVideo = app.querySelector("[data-hero-video='1']");
-  if (heroVideo instanceof HTMLVideoElement) heroVideo.play().catch(() => {});
+  if (heroVideo instanceof HTMLVideoElement) {
+    primeIntroVideo(heroVideo);
+    heroVideo.play().catch(() => {});
+  }
 
   if (!(state.route.name === "buyer" && state.introVisible)) return;
   if (heroVideo instanceof HTMLVideoElement) {
@@ -1041,6 +1085,25 @@ function scheduleIntroFromVideo(heroVideo) {
   heroVideo.addEventListener("loadeddata", schedule, { once: true });
 }
 
+function primeIntroVideo(heroVideo) {
+  if (heroVideo.dataset.introPrimed === "1") return;
+
+  const seekPastSlate = () => {
+    if (heroVideo.dataset.introPrimed === "1") return;
+    const duration = Number(heroVideo.duration || 0);
+    if (!Number.isFinite(duration) || duration <= INTRO_VIDEO_OFFSET_SECONDS + 0.25) return;
+    heroVideo.currentTime = INTRO_VIDEO_OFFSET_SECONDS;
+    heroVideo.dataset.introPrimed = "1";
+  };
+
+  if (heroVideo.readyState >= 1) {
+    seekPastSlate();
+    return;
+  }
+
+  heroVideo.addEventListener("loadedmetadata", seekPastSlate, { once: true });
+}
+
 function startIntroTransition() {
   if (!(state.route.name === "buyer" && state.introVisible)) return;
   if (introExitTimer) return;
@@ -1054,7 +1117,6 @@ function startIntroTransition() {
 
   if (heroSection instanceof HTMLElement) {
     heroSection.classList.add("intro-revealing");
-    heroSection.classList.add("intro-complete");
   }
   if (header instanceof HTMLElement) header.classList.add("intro-revealing");
   document.body.classList.add("intro-transitioning");

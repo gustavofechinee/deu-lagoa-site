@@ -1,11 +1,12 @@
 ﻿const asset = (path) => `${import.meta.env.BASE_URL}${path}`;
 
 export const seedContent = {
-  version: 10,
+  version: 11,
   resort: {
     name: "Deu Lagoa Uruaú",
     tagline: "Hotel & Restaurante à beira da Lagoa do Uruaú, em Beberibe.",
     heroTitle: "Hotel & Restaurante à beira da Lagoa do Uruaú.",
+    heroTitleLines: ["Hotel &", "Restaurante", "à beira da Lagoa", "do Uruaú."],
     heroCopy:
       "Vista encantadora da lagoa, experiências, sabores e conforto. A reserva e o atendimento seguem pelo perfil oficial da casa.",
     storyTitle: "Hospedagem, restaurante e paisagem no mesmo endereço.",
@@ -24,7 +25,7 @@ export const seedContent = {
     signatureImage: asset("deu-lagoa/resto-noite-hq.jpg"),
     culinaryImage: asset("deu-lagoa/familia-hq.jpg"),
     featureVideo: asset("deu-lagoa/instagram/reel-drvibmkjor5.mp4"),
-    featureVideoPoster: asset("deu-lagoa/instagram/reel-drvibmkjor5.jpg"),
+    featureVideoPoster: asset("deu-lagoa/hero-lagoa-hq.jpg"),
     featureVideoSourceUrl: "https://www.instagram.com/reel/DRvIBmkjor5/",
     instagramHandle: "@deulagoauruau",
     instagramUrl: "https://www.instagram.com/deulagoauruau/",
