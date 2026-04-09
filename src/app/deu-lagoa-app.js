@@ -97,7 +97,6 @@ function normalizePublicRoute() {
 }
 
 function render() {
-  state.content = ensureContent();
   syncSelections();
   app.innerHTML = `
     <div class="resort-page">
@@ -108,6 +107,7 @@ function render() {
   syncIntroState();
   bindReveal();
   syncHeader();
+  syncBookingStudio();
   requestScrollEffects();
 }
 
@@ -195,6 +195,144 @@ function splitHeroCopy(copy) {
     .filter(Boolean);
 }
 
+function todayIso() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function addDaysIso(value, days) {
+  if (!value) return "";
+  const stamp = new Date(`${value}T12:00:00`);
+  if (!Number.isFinite(stamp.getTime())) return "";
+  stamp.setDate(stamp.getDate() + days);
+  return stamp.toISOString().slice(0, 10);
+}
+
+function getBookingGuestLimit(suite = getActiveSuite()) {
+  const capacity = Number(suite?.guests || 0);
+  return capacity > 0 ? capacity : 5;
+}
+
+function clampGuestCount(value, suite = getActiveSuite()) {
+  const total = Number(value) || 1;
+  return Math.min(getBookingGuestLimit(suite), Math.max(1, total));
+}
+
+function getBookingAnchorDate() {
+  return state.booking.checkin || addDaysIso(todayIso(), 1) || todayIso();
+}
+
+function getStayPresetRange(nights) {
+  const checkin = getBookingAnchorDate();
+  return {
+    checkin,
+    checkout: addDaysIso(checkin, nights),
+  };
+}
+
+function getNextWeekendRange() {
+  const anchor = new Date(`${getBookingAnchorDate()}T12:00:00`);
+  const day = anchor.getDay();
+  const untilFriday = (5 - day + 7) % 7 || 7;
+  anchor.setDate(anchor.getDate() + untilFriday);
+  const checkin = anchor.toISOString().slice(0, 10);
+  return {
+    checkin,
+    checkout: addDaysIso(checkin, 2),
+  };
+}
+
+function getBookingPeriodLabel(summary = getBookingSummary()) {
+  return summary.valid ? formatDateRange(state.booking.checkin, state.booking.checkout) : "Selecione check-in e check-out";
+}
+
+function getBookingNightsLabel(summary = getBookingSummary()) {
+  if (!summary.valid) return "Periodo ainda nao definido";
+  return `${summary.nights} ${summary.nights === 1 ? "noite" : "noites"}`;
+}
+
+function buildBlockedWindowMarkup(blockedWindows) {
+  if (!blockedWindows.length) {
+    return `
+      <small>agenda atual</small>
+      <span>Sem bloqueios cadastrados para esta categoria.</span>
+    `;
+  }
+
+  return `
+    <small>janelas ja bloqueadas</small>
+    ${blockedWindows
+      .map((reservation) => `<span>${h(formatDateRange(reservation.checkin, reservation.checkout))}</span>`)
+      .join("")}
+  `;
+}
+
+function getBookingSubmitState(summary = getBookingSummary(), availability = getBookingAvailability()) {
+  const hasIdentity = String(state.booking.guestName || "").trim() && String(state.booking.guestContact || "").trim();
+  if (!state.booking.checkin || !state.booking.checkout) {
+    return {
+      disabled: true,
+      label: "Defina seu periodo",
+      note: "Escolha entrada e saida para consultar a agenda.",
+    };
+  }
+  if (!summary.valid) {
+    return {
+      disabled: true,
+      label: "Revise as datas",
+      note: "O check-out precisa ser posterior ao check-in.",
+    };
+  }
+  if (!availability.available) {
+    return {
+      disabled: true,
+      label: "Escolha outro periodo",
+      note: availability.detail,
+    };
+  }
+  if (!hasIdentity) {
+    return {
+      disabled: false,
+      label: "Preencha nome e contato",
+      note: "Esses dois campos sao suficientes para a equipe retornar.",
+    };
+  }
+  return {
+    disabled: false,
+    label: "Enviar consulta",
+    note: "Ao enviar, a janela fica pendente ate a confirmacao da equipe.",
+  };
+}
+
+function applyBookingState(patch, { rerender = false } = {}) {
+  const suiteSlug = String(patch.suite || state.booking.suite || state.activeSuite || "");
+  const suite = getSuiteBySlug(suiteSlug) || getActiveSuite();
+  const nextBooking = {
+    ...state.booking,
+    ...patch,
+    suite: suite?.slug || suiteSlug,
+  };
+
+  nextBooking.guests = clampGuestCount(nextBooking.guests, suite);
+
+  if (nextBooking.checkin && nextBooking.checkout && nextBooking.checkout <= nextBooking.checkin) {
+    nextBooking.checkout = addDaysIso(nextBooking.checkin, 1);
+  }
+
+  state.booking = nextBooking;
+
+  if (suite?.slug) {
+    state.activeSuite = suite.slug;
+    state.activeGalleryIndex = 0;
+  }
+
+  if (rerender) {
+    render();
+    return;
+  }
+
+  syncBookingStudio();
+}
+
 function tplHero(resort, activeSuite, summary) {
   const heroTitleLines = splitHeroTitle(resort.heroTitle, resort.heroTitleLines);
   const heroCopyLines = splitHeroCopy(resort.heroCopy);
@@ -206,7 +344,7 @@ function tplHero(resort, activeSuite, summary) {
         ${
           resort.featureVideo
             ? `
-              <video class="hero-video" data-hero-video="1" autoplay muted loop playsinline preload="metadata" poster="${h(resort.featureVideoPoster || resort.heroImage)}">
+              <video class="hero-video" data-hero-video="1" autoplay muted loop playsinline webkit-playsinline preload="auto" poster="${h(resort.featureVideoPoster || resort.heroImage)}" disablepictureinpicture controlslist="nodownload noplaybackrate noremoteplayback">
                 <source src="${h(resort.featureVideo)}" type="video/mp4" />
               </video>
             `
@@ -277,28 +415,38 @@ function tplReservationStudio(resort, activeSuite, summary) {
   const availability = getBookingAvailability(activeSuite);
   const blockedWindows = getUpcomingBlockedWindows(state.content, activeSuite.slug, 3);
   const contactPending = !resort.reservationWhatsapp && !resort.reservationEmail;
+  const guestLimit = getBookingGuestLimit(activeSuite);
+  const stayPresets = [1, 2, 3, 4].map((nights) => ({
+    nights,
+    active: summary.valid && summary.nights === nights,
+  }));
+  const submitState = getBookingSubmitState(summary, availability);
   return `
     <section class="reservation-studio section-shell" id="reserva">
       <div class="reservation-studio-shell">
         <div class="reservation-studio-copy reveal">
-          <p class="kicker">reservas</p>
-          <h2>Consulta de hospedagem com agenda protegida.</h2>
-          <p>Escolha as datas, envie seu contato e abra uma solicitação preliminar de hospedagem. O período fica bloqueado como pendente enquanto a equipe confirma disponibilidade e condições da estadia.</p>
+          <p class="kicker">reserva direta</p>
+          <h2>Monte a consulta sem perder o contexto da estadia.</h2>
+          <p>Escolha categoria, periodo e ocupacao com atalhos objetivos. O formulario mantem a agenda visivel, resume a estadia ao lado e so pede os dados essenciais para a equipe retornar.</p>
           <div class="reservation-side-image">
-            <img src="${h(activeSuite.image || resort.signatureImage)}" alt="${h(activeSuite.name)}" />
+            <img src="${h(activeSuite.image || resort.signatureImage)}" alt="${h(activeSuite.name)}" loading="lazy" decoding="async" />
+            <div class="reservation-image-caption">
+              <span data-booking-suite-label>${h(activeSuite.name)}</span>
+              <strong data-booking-period-label>${h(getBookingPeriodLabel(summary))}</strong>
+            </div>
           </div>
           <div class="reservation-notes">
             <div>
-              <span>consulta principal</span>
-              <strong>${h(activeSuite.name)}</strong>
+              <span>categoria ativa</span>
+              <strong data-booking-note-suite>${h(activeSuite.name)}</strong>
             </div>
             <div>
-              <span>estimativa</span>
-              <strong>${h(getEstimateLabel(summary, activeSuite))}</strong>
+              <span>estadia</span>
+              <strong data-booking-note-stay>${h(getBookingNightsLabel(summary))}</strong>
             </div>
             <div>
-              <span>canal principal</span>
-              <strong>${h(getPrimaryContactLabel())}</strong>
+              <span>ocupacao</span>
+              <strong data-booking-note-guests>${h(formatGuests(state.booking.guests))}</strong>
             </div>
           </div>
         </div>
@@ -306,82 +454,142 @@ function tplReservationStudio(resort, activeSuite, summary) {
           <div class="booking-panel-head">
             <p class="kicker">disponibilidade</p>
             <h2>Planeje sua chegada</h2>
+            <p>O periodo bloqueado no site segue como pendente ate a confirmacao manual da pousada.</p>
           </div>
-          <form class="booking-form" id="booking-form">
-            <label class="field-block">
-              <span>Categoria</span>
-              <select name="suite">
+          <form class="booking-form booking-form-refined" id="booking-form" novalidate>
+            <section class="booking-step">
+              <div class="booking-step-head">
+                <span>01</span>
+                <div>
+                  <strong>Categoria</strong>
+                  <small>Troque a acomodacao sem sair da tela.</small>
+                </div>
+              </div>
+              <div class="booking-chip-row" role="group" aria-label="Categorias de hospedagem">
                 ${state.content.suites
-                  .map((suite) => `<option value="${h(suite.slug)}" ${suite.slug === state.booking.suite ? "selected" : ""}>${h(suite.name)}</option>`)
+                  .map(
+                    (suite) => `
+                      <button type="button" class="booking-choice-chip ${suite.slug === state.booking.suite ? "active" : ""}" data-booking-suite="${h(suite.slug)}" aria-pressed="${suite.slug === state.booking.suite ? "true" : "false"}">
+                        <small>${h(suite.category || "suite")}</small>
+                        <strong>${h(suite.name)}</strong>
+                      </button>
+                    `,
+                  )
                   .join("")}
-              </select>
-            </label>
-            <div class="field-grid">
-              <label class="field-block"><span>Check-in</span><input type="date" name="checkin" value="${h(state.booking.checkin)}" /></label>
-              <label class="field-block"><span>Check-out</span><input type="date" name="checkout" value="${h(state.booking.checkout)}" /></label>
-            </div>
-            <label class="field-block">
-              <span>Hóspedes</span>
-              <select name="guests">
-                ${[1, 2, 3, 4, 5]
-                  .map((guest) => `<option value="${guest}" ${Number(state.booking.guests) === guest ? "selected" : ""}>${guest} ${guest === 1 ? "hóspede" : "hóspedes"}</option>`)
+              </div>
+            </section>
+            <section class="booking-step">
+              <div class="booking-step-head">
+                <span>02</span>
+                <div>
+                  <strong>Periodo</strong>
+                  <small>Datas validas atualizam a disponibilidade imediatamente.</small>
+                </div>
+              </div>
+              <div class="field-grid booking-date-grid">
+                <label class="field-block booking-date-field">
+                  <span>Check-in</span>
+                  <input type="date" name="checkin" value="${h(state.booking.checkin)}" />
+                  <small data-booking-checkin-hint>${state.booking.checkin ? h(formatDateLabel(state.booking.checkin)) : "Escolha a chegada"}</small>
+                </label>
+                <label class="field-block booking-date-field">
+                  <span>Check-out</span>
+                  <input type="date" name="checkout" value="${h(state.booking.checkout)}" />
+                  <small data-booking-checkout-hint>${state.booking.checkout ? h(formatDateLabel(state.booking.checkout)) : "Escolha a saida"}</small>
+                </label>
+              </div>
+              <div class="booking-quick-grid" role="group" aria-label="Atalhos de estadia">
+                ${stayPresets
+                  .map(
+                    (preset) => `
+                      <button type="button" class="booking-quick-chip ${preset.active ? "active" : ""}" data-booking-stay="${preset.nights}">
+                        ${preset.nights} ${preset.nights === 1 ? "noite" : "noites"}
+                      </button>
+                    `,
+                  )
                   .join("")}
-              </select>
-            </label>
-            <div class="field-grid">
-              <label class="field-block"><span>Seu nome</span><input name="guestName" value="${h(state.booking.guestName)}" placeholder="Nome do responsavel" /></label>
-              <label class="field-block"><span>Contato</span><input name="guestContact" value="${h(state.booking.guestContact)}" placeholder="WhatsApp ou telefone" /></label>
-            </div>
-            <label class="field-block"><span>E-mail</span><input type="email" name="guestEmail" value="${h(state.booking.guestEmail)}" placeholder="email@exemplo.com" /></label>
-            <label class="field-block"><span>Observações</span><textarea name="notes" placeholder="Horário de chegada, pacote, pedido especial...">${h(state.booking.notes)}</textarea></label>
+                <button type="button" class="booking-quick-chip" data-booking-weekend="1">Proximo fim de semana</button>
+              </div>
+            </section>
+            <section class="booking-step">
+              <div class="booking-step-head">
+                <span>03</span>
+                <div>
+                  <strong>Hospedes</strong>
+                  <small>Capacidade desta categoria: ate ${h(String(guestLimit))} ${guestLimit === 1 ? "pessoa" : "pessoas"}.</small>
+                </div>
+              </div>
+              <div class="guest-stepper" role="group" aria-label="Quantidade de hospedes">
+                <button type="button" class="guest-stepper-button" data-booking-guests-step="-1" aria-label="Reduzir hospedes">-</button>
+                <div class="guest-stepper-display">
+                  <strong data-booking-guests-count>${h(String(clampGuestCount(state.booking.guests, activeSuite)))}</strong>
+                  <span data-booking-guests-label>${h(formatGuests(state.booking.guests))}</span>
+                </div>
+                <button type="button" class="guest-stepper-button" data-booking-guests-step="1" aria-label="Aumentar hospedes">+</button>
+              </div>
+            </section>
+            <section class="booking-step booking-step-contact">
+              <div class="booking-step-head">
+                <span>04</span>
+                <div>
+                  <strong>Contato</strong>
+                  <small>Nome e WhatsApp bastam para a equipe responder.</small>
+                </div>
+              </div>
+              <div class="field-grid">
+                <label class="field-block">
+                  <span>Seu nome</span>
+                  <input name="guestName" value="${h(state.booking.guestName)}" placeholder="Nome do responsavel" autocomplete="name" />
+                </label>
+                <label class="field-block">
+                  <span>WhatsApp ou telefone</span>
+                  <input name="guestContact" value="${h(state.booking.guestContact)}" placeholder="(85) 99999-9999" autocomplete="tel" inputmode="tel" />
+                </label>
+              </div>
+              <label class="field-block">
+                <span>E-mail</span>
+                <input type="email" name="guestEmail" value="${h(state.booking.guestEmail)}" placeholder="email@exemplo.com" autocomplete="email" />
+              </label>
+              <label class="field-block">
+                <span>Observacoes</span>
+                <textarea name="notes" placeholder="Horario de chegada, preferencia de acomodacao ou pedido especial.">${h(state.booking.notes)}</textarea>
+              </label>
+            </section>
             <div class="booking-summary-card">
               <div class="booking-brand">
-                <img src="${h(resort.profileImage)}" alt="${h(resort.name)}" />
+                <img src="${h(resort.profileImage)}" alt="${h(resort.name)}" loading="lazy" decoding="async" />
                 <span>${h(resort.instagramHandle)}</span>
               </div>
-              <div><small>consulta</small><strong>${h(activeSuite.name)}</strong></div>
-              <div><small>tarifa</small><strong>${h(getRateLabel(activeSuite.rate))}</strong></div>
-              <div><small>status do pedido</small><strong>${h(getEstimateLabel(summary, activeSuite))}</strong></div>
-              <div class="availability-badge ${availability.available ? "available" : availability.status === "invalid" ? "pending" : "unavailable"}">
-                <small>${h(availability.label)}</small>
-                <strong>${h(availability.detail)}</strong>
+              <div class="booking-summary-grid">
+                <div><small>categoria</small><strong data-booking-summary-suite>${h(activeSuite.name)}</strong></div>
+                <div><small>periodo</small><strong data-booking-summary-period>${h(getBookingPeriodLabel(summary))}</strong></div>
+                <div><small>estadia</small><strong data-booking-summary-stay>${h(getEstimateLabel(summary, activeSuite))}</strong></div>
+                <div><small>ocupacao</small><strong data-booking-summary-guests>${h(formatGuests(state.booking.guests))}</strong></div>
               </div>
-              ${
-                blockedWindows.length
-                  ? `
-                    <div class="blocked-window-list">
-                      <small>janelas já bloqueadas</small>
-                      ${blockedWindows
-                        .map((reservation) => `<span>${h(formatDateRange(reservation.checkin, reservation.checkout))}</span>`)
-                        .join("")}
-                    </div>
-                  `
-                  : `
-                    <div class="blocked-window-list">
-                      <small>agenda atual</small>
-                      <span>Sem bloqueios cadastrados para esta consulta.</span>
-                    </div>
-                  `
-              }
+              <div class="availability-badge ${availability.available ? "available" : availability.status === "invalid" ? "pending" : "unavailable"}" data-booking-availability>
+                <small data-booking-availability-label>${h(availability.label)}</small>
+                <strong data-booking-availability-detail>${h(availability.detail)}</strong>
+              </div>
+              <div class="blocked-window-list" data-booking-blocked>${buildBlockedWindowMarkup(blockedWindows)}</div>
               ${
                 contactPending
                   ? `
                     <div class="booking-operational-note">
                       <small>atendimento direto</small>
-                      <strong>Enquanto os demais canais são atualizados, o contato segue pelo Instagram oficial da pousada.</strong>
+                      <strong>Enquanto os demais canais sao atualizados, o contato segue pelo Instagram oficial da pousada.</strong>
                     </div>
                   `
                   : ""
               }
             </div>
-            <button type="submit" class="booking-submit">Enviar consulta</button>
+            <button type="submit" class="booking-submit" data-booking-submit ${submitState.disabled ? "disabled" : ""}>${h(submitState.label)}</button>
+            <p class="booking-submit-note" data-booking-submit-note>${h(submitState.note)}</p>
           </form>
         </aside>
       </div>
     </section>
   `;
 }
-
 function tplBrandStory(resort) {
   const [leadPanel, ...supportPanels] = state.content.storyPanels;
   return `
@@ -394,7 +602,7 @@ function tplBrandStory(resort) {
           <div class="policy-list">${state.content.policies.map((item) => `<span>${h(item)}</span>`).join("")}</div>
         </div>
         <article class="story-feature">
-          <img src="${h(leadPanel.image)}" alt="${h(leadPanel.title)}" />
+          <img src="${h(leadPanel.image)}" alt="${h(leadPanel.title)}" loading="lazy" decoding="async" />
           <div class="story-feature-copy">
             <small>${h(leadPanel.eyebrow)}</small>
             <strong>${h(leadPanel.title)}</strong>
@@ -407,7 +615,7 @@ function tplBrandStory(resort) {
           .map(
             (panel) => `
               <article class="story-note reveal">
-                <div class="story-note-media"><img src="${h(panel.image)}" alt="${h(panel.title)}" /></div>
+                <div class="story-note-media"><img src="${h(panel.image)}" alt="${h(panel.title)}" loading="lazy" decoding="async" /></div>
                 <div class="story-note-copy">
                   <small>${h(panel.eyebrow)}</small>
                   <strong>${h(panel.title)}</strong>
@@ -482,7 +690,7 @@ function tplSuites(activeSuite) {
             .join("")}
         </div>
         <article class="suite-stage reveal">
-          <div class="suite-stage-media"><img src="${h(activeSuite.gallery[state.activeGalleryIndex] || activeSuite.image)}" alt="${h(activeSuite.name)}" /></div>
+          <div class="suite-stage-media"><img src="${h(activeSuite.gallery[state.activeGalleryIndex] || activeSuite.image)}" alt="${h(activeSuite.name)}" loading="lazy" decoding="async" /></div>
           <div class="suite-stage-copy">
             <p class="kicker">${h(activeSuite.category)}</p>
             <h3>${h(activeSuite.name)}</h3>
@@ -493,7 +701,7 @@ function tplSuites(activeSuite) {
             <div class="gallery-strip">
               ${activeSuite.gallery
                 .map(
-                  (image, index) => `<button type="button" class="gallery-thumb ${index === state.activeGalleryIndex ? "active" : ""}" data-gallery-index="${index}"><img src="${h(image)}" alt="${h(activeSuite.name)} ${index + 1}" /></button>`,
+                  (image, index) => `<button type="button" class="gallery-thumb ${index === state.activeGalleryIndex ? "active" : ""}" data-gallery-index="${index}"><img src="${h(image)}" alt="${h(activeSuite.name)} ${index + 1}" loading="lazy" decoding="async" /></button>`,
                 )
                 .join("")}
             </div>
@@ -576,7 +784,7 @@ function tplInstagram() {
           .map(
             (post, index) => `
               <${post.sourceUrl ? "a" : "article"} class="instagram-card instagram-card-${(index % 3) + 1} reveal" ${post.sourceUrl ? `href="${h(post.sourceUrl)}" target="_blank" rel="noreferrer noopener"` : ""}>
-                <img src="${h(post.image)}" alt="${h(post.caption)}" />
+                <img src="${h(post.image)}" alt="${h(post.caption)}" loading="lazy" decoding="async" />
                 <div>
                   <small>${h(resort.instagramHandle)}</small>
                   <p>${h(post.caption)}</p>
@@ -1069,7 +1277,7 @@ function syncIntroState() {
   const heroVideo = app.querySelector("[data-hero-video='1']");
   if (heroVideo instanceof HTMLVideoElement) {
     primeIntroVideo(heroVideo);
-    heroVideo.play().catch(() => {});
+    ensureHeroVideoPlayback(heroVideo);
   }
 
   if (!(state.route.name === "buyer" && state.introVisible)) return;
@@ -1107,6 +1315,28 @@ function primeIntroVideo(heroVideo) {
   }
 
   heroVideo.addEventListener("loadedmetadata", seekPastSlate, { once: true });
+}
+
+function ensureHeroVideoPlayback(heroVideo) {
+  heroVideo.autoplay = true;
+  heroVideo.loop = true;
+  heroVideo.muted = true;
+  heroVideo.defaultMuted = true;
+  heroVideo.playsInline = true;
+  heroVideo.setAttribute("autoplay", "");
+  heroVideo.setAttribute("muted", "");
+  heroVideo.setAttribute("playsinline", "");
+  heroVideo.setAttribute("webkit-playsinline", "");
+  heroVideo.removeAttribute("controls");
+
+  const tryPlay = () => {
+    heroVideo.play().catch(() => {});
+  };
+
+  tryPlay();
+  if (heroVideo.readyState < 3) {
+    heroVideo.addEventListener("canplay", tryPlay, { once: true });
+  }
 }
 
 function startIntroTransition() {
@@ -1377,6 +1607,7 @@ function syncSelections() {
   if (!state.content.suites.length) state.content = JSON.parse(JSON.stringify(seedContent));
   if (!state.activeSuite || !state.content.suites.some((suite) => suite.slug === state.activeSuite)) state.activeSuite = state.content.suites[0]?.slug || "";
   if (!state.booking.suite || !state.content.suites.some((suite) => suite.slug === state.booking.suite)) state.booking.suite = state.activeSuite;
+  state.booking.guests = clampGuestCount(state.booking.guests, getActiveSuite());
   if (!state.content.suites.some((suite) => suite.slug === state.seller.suiteEditSlug)) state.seller.suiteEditSlug = state.content.suites[0]?.slug || "";
   if (!state.content.experiences.some((item) => item.id === state.seller.experienceEditId)) state.seller.experienceEditId = state.content.experiences[0]?.id || "";
   if (!state.content.instagramPosts.some((item) => item.id === state.seller.instagramEditId)) state.seller.instagramEditId = state.content.instagramPosts[0]?.id || "";
@@ -1396,6 +1627,33 @@ function onClick(event) {
   const dismissIntroTrigger = event.target.closest('[data-action="dismiss-intro"]');
   if (dismissIntroTrigger) {
     dismissIntro();
+    return;
+  }
+
+  const bookingSuiteTrigger = event.target.closest("[data-booking-suite]");
+  if (bookingSuiteTrigger) {
+    const slug = bookingSuiteTrigger.getAttribute("data-booking-suite") || state.content.suites[0]?.slug || "";
+    applyBookingState({ suite: slug, guests: clampGuestCount(state.booking.guests, getSuiteBySlug(slug) || getActiveSuite()) }, { rerender: true });
+    return;
+  }
+
+  const stayPresetTrigger = event.target.closest("[data-booking-stay]");
+  if (stayPresetTrigger) {
+    const nights = Number(stayPresetTrigger.getAttribute("data-booking-stay") || 0);
+    if (nights > 0) applyBookingState(getStayPresetRange(nights));
+    return;
+  }
+
+  const weekendTrigger = event.target.closest("[data-booking-weekend]");
+  if (weekendTrigger) {
+    applyBookingState(getNextWeekendRange());
+    return;
+  }
+
+  const guestStepTrigger = event.target.closest("[data-booking-guests-step]");
+  if (guestStepTrigger) {
+    const direction = Number(guestStepTrigger.getAttribute("data-booking-guests-step") || 0);
+    applyBookingState({ guests: clampGuestCount(Number(state.booking.guests || 1) + direction) });
     return;
   }
 
@@ -1516,18 +1774,21 @@ function onInput(event) {
   if (!(target instanceof HTMLInputElement || target instanceof HTMLSelectElement || target instanceof HTMLTextAreaElement)) return;
   const form = target.closest("form");
   if (!form || form.getAttribute("id") !== "booking-form") return;
-  state.booking = {
-    ...state.booking,
-    [target.name]: target.name === "guests" ? Number(target.value) : target.value,
-  };
-  if (target.name === "suite") {
-    state.activeSuite = target.value;
-    state.activeGalleryIndex = 0;
+  let value = target.value;
+  if (target.name === "guestContact") {
+    value = formatPhoneInput(value);
+    target.value = value;
   }
-  render();
+  applyBookingState({
+    [target.name]: target.name === "guests" ? Number(value) : value,
+  });
 }
 
 function onChange(event) {
+  const target = event.target;
+  if (!(target instanceof HTMLInputElement || target instanceof HTMLSelectElement || target instanceof HTMLTextAreaElement)) return;
+  const form = target.closest("form");
+  if (!form || form.getAttribute("id") !== "booking-form") return;
   onInput(event);
 }
 
@@ -1579,7 +1840,7 @@ function onSubmit(event) {
     state.seller.reservationEditId = reservation.id;
     persistContent();
     window.open(buildReservationUrl(getActiveSuite(), summary, reservation), "_blank", "noopener,noreferrer");
-    setNotice(`Solicitação registrada para ${getActiveSuite().name}. As datas agora aparecem bloqueadas como pendentes.`);
+    setNotice("Solicitação registrada. As datas agora aparecem bloqueadas como pendentes.");
     return;
   }
 
@@ -1821,6 +2082,113 @@ function deleteReservation(id) {
   setNotice("Reserva removida da agenda.");
 }
 
+function formatPhoneInput(value) {
+  const digits = String(value || "").replace(/\D/g, "").slice(0, 11);
+  if (digits.length <= 2) return digits;
+  if (digits.length <= 6) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+  if (digits.length <= 10) return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
+  return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+}
+
+function syncBookingStudio() {
+  if (state.route.name !== "buyer") return;
+  const form = app.querySelector("#booking-form");
+  if (!(form instanceof HTMLFormElement)) return;
+
+  const suite = getActiveSuite();
+  const summary = getBookingSummary();
+  const availability = getBookingAvailability(suite);
+  const submitState = getBookingSubmitState(summary, availability);
+  const blockedWindows = getUpcomingBlockedWindows(state.content, suite.slug, 3);
+  const guestLimit = getBookingGuestLimit(suite);
+  const today = todayIso();
+
+  const checkinInput = form.elements.namedItem("checkin");
+  if (checkinInput instanceof HTMLInputElement) {
+    checkinInput.min = today;
+    if (checkinInput.value !== state.booking.checkin) checkinInput.value = state.booking.checkin;
+  }
+
+  const checkoutInput = form.elements.namedItem("checkout");
+  if (checkoutInput instanceof HTMLInputElement) {
+    checkoutInput.min = state.booking.checkin ? addDaysIso(state.booking.checkin, 1) : today;
+    if (checkoutInput.value !== state.booking.checkout) checkoutInput.value = state.booking.checkout;
+  }
+
+  form.querySelectorAll("[data-booking-suite]").forEach((node) => {
+    const active = node.getAttribute("data-booking-suite") === suite.slug;
+    node.classList.toggle("active", active);
+    node.setAttribute("aria-pressed", active ? "true" : "false");
+  });
+
+  form.querySelectorAll("[data-booking-stay]").forEach((node) => {
+    const nights = Number(node.getAttribute("data-booking-stay") || 0);
+    node.classList.toggle("active", summary.valid && summary.nights === nights);
+  });
+
+  const weekendButton = form.querySelector("[data-booking-weekend]");
+  if (weekendButton instanceof HTMLElement) {
+    const weekend = getNextWeekendRange();
+    weekendButton.classList.toggle("active", state.booking.checkin === weekend.checkin && state.booking.checkout === weekend.checkout);
+  }
+
+  const minusButton = form.querySelector('[data-booking-guests-step="-1"]');
+  const plusButton = form.querySelector('[data-booking-guests-step="1"]');
+  if (minusButton instanceof HTMLButtonElement) minusButton.disabled = Number(state.booking.guests || 1) <= 1;
+  if (plusButton instanceof HTMLButtonElement) plusButton.disabled = Number(state.booking.guests || 1) >= guestLimit;
+
+  const guestCount = app.querySelector("[data-booking-guests-count]");
+  if (guestCount) guestCount.textContent = String(state.booking.guests || 1);
+  const guestLabel = app.querySelector("[data-booking-guests-label]");
+  if (guestLabel) guestLabel.textContent = formatGuests(state.booking.guests);
+
+  const checkinHint = app.querySelector("[data-booking-checkin-hint]");
+  if (checkinHint) checkinHint.textContent = state.booking.checkin ? formatDateLabel(state.booking.checkin) : "Escolha a chegada";
+  const checkoutHint = app.querySelector("[data-booking-checkout-hint]");
+  if (checkoutHint) checkoutHint.textContent = state.booking.checkout ? formatDateLabel(state.booking.checkout) : "Escolha a saida";
+
+  const suiteLabel = app.querySelector("[data-booking-suite-label]");
+  if (suiteLabel) suiteLabel.textContent = suite.name;
+  const periodLabel = app.querySelector("[data-booking-period-label]");
+  if (periodLabel) periodLabel.textContent = getBookingPeriodLabel(summary);
+  const noteSuite = app.querySelector("[data-booking-note-suite]");
+  if (noteSuite) noteSuite.textContent = suite.name;
+  const noteStay = app.querySelector("[data-booking-note-stay]");
+  if (noteStay) noteStay.textContent = getBookingNightsLabel(summary);
+  const noteGuests = app.querySelector("[data-booking-note-guests]");
+  if (noteGuests) noteGuests.textContent = formatGuests(state.booking.guests);
+
+  const summarySuite = app.querySelector("[data-booking-summary-suite]");
+  if (summarySuite) summarySuite.textContent = suite.name;
+  const summaryPeriod = app.querySelector("[data-booking-summary-period]");
+  if (summaryPeriod) summaryPeriod.textContent = getBookingPeriodLabel(summary);
+  const summaryStay = app.querySelector("[data-booking-summary-stay]");
+  if (summaryStay) summaryStay.textContent = getEstimateLabel(summary, suite);
+  const summaryGuests = app.querySelector("[data-booking-summary-guests]");
+  if (summaryGuests) summaryGuests.textContent = formatGuests(state.booking.guests);
+
+  const availabilityCard = app.querySelector("[data-booking-availability]");
+  if (availabilityCard) {
+    availabilityCard.classList.remove("available", "pending", "unavailable");
+    availabilityCard.classList.add(availability.available ? "available" : availability.status === "invalid" ? "pending" : "unavailable");
+  }
+  const availabilityLabel = app.querySelector("[data-booking-availability-label]");
+  if (availabilityLabel) availabilityLabel.textContent = availability.label;
+  const availabilityDetail = app.querySelector("[data-booking-availability-detail]");
+  if (availabilityDetail) availabilityDetail.textContent = availability.detail;
+
+  const blocked = app.querySelector("[data-booking-blocked]");
+  if (blocked) blocked.innerHTML = buildBlockedWindowMarkup(blockedWindows);
+
+  const submitButton = app.querySelector("[data-booking-submit]");
+  if (submitButton instanceof HTMLButtonElement) {
+    submitButton.disabled = submitState.disabled;
+    submitButton.textContent = submitState.label;
+  }
+  const submitNote = app.querySelector("[data-booking-submit-note]");
+  if (submitNote) submitNote.textContent = submitState.note;
+}
+
 function persistContent() {
   state.content.meta = {
     ...(state.content.meta || {}),
@@ -1961,10 +2329,27 @@ function bindReveal() {
   );
 
   nodes.forEach((node) => revealObserver.observe(node));
+  syncVisibleReveals(nodes);
+}
+
+function syncVisibleReveals(nodes = app.querySelectorAll(".reveal")) {
+  if (!nodes.length) return;
+  const viewportHeight = window.innerHeight || document.documentElement.clientHeight || 0;
+  nodes.forEach((node) => {
+    if (!(node instanceof HTMLElement) || node.classList.contains("in-view")) return;
+    const rect = node.getBoundingClientRect();
+    const entersViewport = rect.top <= viewportHeight * 0.92;
+    const notFarAbove = rect.bottom >= viewportHeight * 0.08;
+    if (!entersViewport || !notFarAbove) return;
+    node.classList.add("in-view");
+    if (revealObserver) revealObserver.unobserve(node);
+  });
+  animateCounters();
 }
 
 function onScroll() {
   syncHeader();
+  syncVisibleReveals();
   requestScrollEffects();
 }
 
