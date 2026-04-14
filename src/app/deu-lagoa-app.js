@@ -36,6 +36,7 @@ const state = {
     experienceEditId: "",
     instagramEditId: "",
     reservationEditId: "",
+    reservationFilter: "pending",
   },
 };
 
@@ -47,11 +48,13 @@ let introBlurTimer = 0;
 let introExitTimer = 0;
 let scrollFrame = 0;
 let introPlayedThisLoad = false;
+let heroTapStamp = 0;
 
 init();
 
 function init() {
   app.addEventListener("click", onClick);
+  app.addEventListener("dblclick", onDoubleClick);
   app.addEventListener("input", onInput);
   app.addEventListener("change", onChange);
   app.addEventListener("submit", onSubmit);
@@ -241,6 +244,18 @@ function getNextWeekendRange() {
   };
 }
 
+function getNextWeekRange() {
+  const anchor = new Date(`${getBookingAnchorDate()}T12:00:00`);
+  const day = anchor.getDay();
+  const untilMonday = (1 - day + 7) % 7 || 7;
+  anchor.setDate(anchor.getDate() + untilMonday);
+  const checkin = anchor.toISOString().slice(0, 10);
+  return {
+    checkin,
+    checkout: addDaysIso(checkin, 3),
+  };
+}
+
 function getBookingPeriodLabel(summary = getBookingSummary()) {
   return summary.valid ? formatDateRange(state.booking.checkin, state.booking.checkout) : "Selecione check-in e check-out";
 }
@@ -298,8 +313,8 @@ function getBookingSubmitState(summary = getBookingSummary(), availability = get
   }
   return {
     disabled: false,
-    label: "Enviar consulta",
-    note: "Ao enviar, a janela fica pendente ate a confirmacao da equipe.",
+    label: "Enviar para recepcao",
+    note: "A solicitacao entra no painel interno do vendedor e bloqueia a janela como pendente.",
   };
 }
 
@@ -313,6 +328,10 @@ function applyBookingState(patch, { rerender = false } = {}) {
   };
 
   nextBooking.guests = clampGuestCount(nextBooking.guests, suite);
+
+  if (nextBooking.checkin && !nextBooking.checkout) {
+    nextBooking.checkout = addDaysIso(nextBooking.checkin, 1);
+  }
 
   if (nextBooking.checkin && nextBooking.checkout && nextBooking.checkout <= nextBooking.checkin) {
     nextBooking.checkout = addDaysIso(nextBooking.checkin, 1);
@@ -340,13 +359,15 @@ function tplHero(resort, activeSuite, summary) {
   return `
     <section class="hero-section ${state.introVisible ? "intro-playing" : "intro-complete"}" id="topo">
       ${state.introVisible ? `<button type="button" class="intro-skip hero-intro-skip" data-action="dismiss-intro">Pular</button>` : ""}
-      <div class="hero-backdrop">
+      <div class="hero-backdrop" data-hero-interaction="1">
         ${
           resort.featureVideo
             ? `
-              <video class="hero-video" data-hero-video="1" autoplay muted loop playsinline webkit-playsinline preload="auto" poster="${h(resort.featureVideoPoster || resort.heroImage)}" disablepictureinpicture controlslist="nodownload noplaybackrate noremoteplayback">
-                <source src="${h(resort.featureVideo)}" type="video/mp4" />
-              </video>
+              <div class="hero-video-shell">
+                <video class="hero-video" data-hero-video="1" autoplay muted loop playsinline webkit-playsinline preload="auto" poster="${h(resort.featureVideoPoster || resort.heroImage)}" disablepictureinpicture controlslist="nodownload noplaybackrate noremoteplayback">
+                  <source src="${h(resort.featureVideo)}" type="video/mp4" />
+                </video>
+              </div>
             `
             : ""
         }
@@ -416,6 +437,8 @@ function tplReservationStudio(resort, activeSuite, summary) {
   const blockedWindows = getUpcomingBlockedWindows(state.content, activeSuite.slug, 3);
   const contactPending = !resort.reservationWhatsapp && !resort.reservationEmail;
   const guestLimit = getBookingGuestLimit(activeSuite);
+  const today = todayIso();
+  const nextWeekRange = getNextWeekRange();
   const stayPresets = [1, 2, 3, 4].map((nights) => ({
     nights,
     active: summary.valid && summary.nights === nights,
@@ -426,8 +449,8 @@ function tplReservationStudio(resort, activeSuite, summary) {
       <div class="reservation-studio-shell">
         <div class="reservation-studio-copy reveal">
           <p class="kicker">reserva direta</p>
-          <h2>Monte a consulta sem perder o contexto da estadia.</h2>
-          <p>Escolha categoria, periodo e ocupacao com atalhos objetivos. O formulario mantem a agenda visivel, resume a estadia ao lado e so pede os dados essenciais para a equipe retornar.</p>
+          <h2>Solicite a estadia com fluxo claro, agenda viva e retorno humano.</h2>
+          <p>Selecione a categoria, ajuste as datas com atalhos e envie o pedido direto para a fila operacional da pousada. A janela fica marcada como pendente ate a resposta da equipe.</p>
           <div class="reservation-side-image">
             <img src="${h(activeSuite.image || resort.signatureImage)}" alt="${h(activeSuite.name)}" loading="lazy" decoding="async" />
             <div class="reservation-image-caption">
@@ -453,8 +476,8 @@ function tplReservationStudio(resort, activeSuite, summary) {
         <aside class="booking-panel reveal">
           <div class="booking-panel-head">
             <p class="kicker">disponibilidade</p>
-            <h2>Planeje sua chegada</h2>
-            <p>O periodo bloqueado no site segue como pendente ate a confirmacao manual da pousada.</p>
+            <h2>Monte o pedido de reserva</h2>
+            <p>O envio cria uma solicitacao interna para a aba de reservas do vendedor. A disponibilidade final continua passando pela confirmacao manual da pousada.</p>
           </div>
           <form class="booking-form booking-form-refined" id="booking-form" novalidate>
             <section class="booking-step">
@@ -489,12 +512,18 @@ function tplReservationStudio(resort, activeSuite, summary) {
               <div class="field-grid booking-date-grid">
                 <label class="field-block booking-date-field">
                   <span>Check-in</span>
-                  <input type="date" name="checkin" value="${h(state.booking.checkin)}" />
+                  <div class="booking-date-input-wrap">
+                    <input type="date" name="checkin" min="${h(today)}" value="${h(state.booking.checkin)}" />
+                    <button type="button" class="booking-date-trigger" data-action="open-booking-picker" data-target="checkin">Abrir calendario</button>
+                  </div>
                   <small data-booking-checkin-hint>${state.booking.checkin ? h(formatDateLabel(state.booking.checkin)) : "Escolha a chegada"}</small>
                 </label>
                 <label class="field-block booking-date-field">
                   <span>Check-out</span>
-                  <input type="date" name="checkout" value="${h(state.booking.checkout)}" />
+                  <div class="booking-date-input-wrap">
+                    <input type="date" name="checkout" min="${h(state.booking.checkin ? addDaysIso(state.booking.checkin, 1) : today)}" value="${h(state.booking.checkout)}" />
+                    <button type="button" class="booking-date-trigger" data-action="open-booking-picker" data-target="checkout">Abrir calendario</button>
+                  </div>
                   <small data-booking-checkout-hint>${state.booking.checkout ? h(formatDateLabel(state.booking.checkout)) : "Escolha a saida"}</small>
                 </label>
               </div>
@@ -509,6 +538,8 @@ function tplReservationStudio(resort, activeSuite, summary) {
                   )
                   .join("")}
                 <button type="button" class="booking-quick-chip" data-booking-weekend="1">Proximo fim de semana</button>
+                <button type="button" class="booking-quick-chip ${state.booking.checkin === nextWeekRange.checkin && state.booking.checkout === nextWeekRange.checkout ? "active" : ""}" data-booking-next-week="1">Inicio da proxima semana</button>
+                <button type="button" class="booking-quick-chip booking-quick-chip-clear" data-action="clear-booking-dates">Limpar datas</button>
               </div>
             </section>
             <section class="booking-step">
@@ -571,6 +602,10 @@ function tplReservationStudio(resort, activeSuite, summary) {
                 <strong data-booking-availability-detail>${h(availability.detail)}</strong>
               </div>
               <div class="blocked-window-list" data-booking-blocked>${buildBlockedWindowMarkup(blockedWindows)}</div>
+              <div class="booking-operational-note booking-operational-note-primary">
+                <small>fluxo interno</small>
+                <strong>Ao enviar, o pedido entra automaticamente na aba Reservas do vendedor com status pendente.</strong>
+              </div>
               ${
                 contactPending
                   ? `
@@ -911,10 +946,10 @@ function tplSellerPage() {
       <section class="seller-kpis reveal">
         <article><strong>${state.content.suites.length}</strong><span>categorias cadastradas</span></article>
         <article><strong>${metrics.activeCount}</strong><span>reservas bloqueando agenda</span></article>
-        <article><strong>${metrics.pendingCount}</strong><span>solicita\u00e7\u00f5es pendentes</span></article>
-        <article><strong>${h(getAverageRateLabel())}</strong><span>tarif?rio cadastrado</span></article>
-        <article><strong>${metrics.occupancyRate}%</strong><span>ocupa\u00e7\u00e3o projetada em 90 dias</span></article>
-        <article><strong>${h(state.content.resort.location)}</strong><span>opera\u00e7\u00e3o atual</span></article>
+        <article><strong>${metrics.pendingCount}</strong><span>solicitacoes pendentes</span></article>
+        <article><strong>${h(getAverageRateLabel())}</strong><span>tarifario cadastrado</span></article>
+        <article><strong>${metrics.occupancyRate}%</strong><span>ocupacao projetada em 90 dias</span></article>
+        <article><strong>${h(state.content.resort.location)}</strong><span>operacao atual</span></article>
       </section>
       ${tplSellerHeroStrip(metrics)}
       ${state.route.tab === "experiencias"
@@ -970,22 +1005,24 @@ function tplSellerLogin() {
 }
 
 function tplSellerHeroStrip(metrics) {
+  const statusCounts = getReservationStatusCounts();
+  const latestReservation = sortReservationsForSeller(state.content.reservations || [])[0];
   return `
     <section class="seller-hero-strip reveal">
       <article>
-        <small>reservas</small>
-        <strong>${metrics.reservationCount}</strong>
-        <p>Total registrado no painel da pousada.</p>
+        <small>fila ativa</small>
+        <strong>${statusCounts.pending}</strong>
+        <p>Solicitacoes aguardando retorno da recepcao.</p>
       </article>
       <article>
-        <small>stack</small>
-        <strong>Postgres-ready</strong>
-        <p>Schema e checklist de produ\u00e7\u00e3o j\u00e1 inclu\u00eddos no projeto.</p>
+        <small>confirmadas</small>
+        <strong>${statusCounts.confirmed}</strong>
+        <p>Reservas que ja podem seguir para atendimento final.</p>
       </article>
       <article>
-        <small>status p\u00fablico</small>
-        <strong>fontes validadas</strong>
-        <p>Instagram oficial e localiza\u00e7\u00e3o p\u00fablica conferidos em 02/04/2026.</p>
+        <small>ultimo movimento</small>
+        <strong>${latestReservation ? formatDateTimeLabel(latestReservation.createdAt) : "sem entradas"}</strong>
+        <p>${latestReservation ? `${h(latestReservation.guestName || "Solicitacao")} em ${h(formatReservationStatus(latestReservation.status))}.` : "Nenhuma solicitacao recebida ainda pelo site."}</p>
       </article>
     </section>
   `;
@@ -1071,32 +1108,85 @@ function tplSellerExperiences() {
 
 function tplSellerReservations() {
   const editReservation = getSellerReservation();
-  const reservations = [...(state.content.reservations || [])].sort((left, right) => String(right.createdAt || "").localeCompare(String(left.createdAt || "")));
+  const statusCounts = getReservationStatusCounts();
+  const statusOptions = getReservationStatusOptions();
+  const activeFilter = state.seller.reservationFilter || "pending";
+  const reservations = sortReservationsForSeller(state.content.reservations || []);
+  const filteredReservations =
+    activeFilter === "all" ? reservations : reservations.filter((reservation) => String(reservation.status || "pending").toLowerCase() === activeFilter);
+  const suite = getSuiteBySlug(editReservation.suiteSlug);
+  const contactHref = getGuestContactHref(editReservation);
   return `
     <section class="seller-grid reveal">
       <article class="seller-panel seller-panel-list">
         <div class="seller-panel-head"><div><small>agenda</small><h2>Reservas e bloqueios</h2></div><button type="button" class="seller-link-button" data-action="new-reservation">Nova reserva</button></div>
+        <div class="seller-filter-row" role="tablist" aria-label="Filtrar reservas por status">
+          ${statusOptions
+            .map(
+              (option) => `
+                <button
+                  type="button"
+                  class="seller-filter-pill ${option.value === activeFilter ? "active" : ""}"
+                  data-reservation-filter="${option.value}"
+                  aria-pressed="${option.value === activeFilter ? "true" : "false"}"
+                >
+                  <span>${h(option.label)}</span>
+                  <strong>${h(String(statusCounts[option.value] || 0))}</strong>
+                </button>
+              `,
+            )
+            .join("")}
+        </div>
         <div class="seller-list">
           ${
-            reservations.length
-              ? reservations
+            filteredReservations.length
+              ? filteredReservations
                   .map((reservation) => {
                     const suite = getSuiteBySlug(reservation.suiteSlug);
-                    return `<button type="button" class="seller-card ${reservation.id === state.seller.reservationEditId ? "active" : ""}" data-edit-reservation="${h(reservation.id)}"><div><strong>${h(reservation.guestName || "Sem nome")}</strong><span>${h(suite?.name || reservation.suiteSlug)}</span></div><small>${h(formatReservationStatus(reservation.status))}</small></button>`;
+                    return `
+                      <button type="button" class="seller-card seller-card-reservation ${reservation.id === state.seller.reservationEditId ? "active" : ""}" data-edit-reservation="${h(reservation.id)}">
+                        <div class="seller-card-copy">
+                          <small>${h(formatRequestCode(reservation.id))} • ${h(formatReservationStatus(reservation.status))}</small>
+                          <strong>${h(reservation.guestName || "Sem nome")}</strong>
+                          <span>${h(suite?.name || reservation.suiteSlug)} • ${h(formatDateRange(reservation.checkin, reservation.checkout) || "Periodo nao definido")}</span>
+                          <span>${h(formatGuests(reservation.guests || 1))} • origem ${h(reservation.source || "site")}</span>
+                        </div>
+                        <small>${h(formatDateTimeLabel(reservation.createdAt))}</small>
+                      </button>
+                    `;
                   })
                   .join("")
-              : `<article class="seller-empty-state"><strong>Sem reservas ainda</strong><p>A primeira solicitacao de disponibilidade criada no site aparecera aqui com bloqueio de datas e status operacional.</p></article>`
+              : `<article class="seller-empty-state"><strong>Nenhuma reserva neste filtro</strong><p>As solicitacoes criadas no site entram aqui automaticamente e podem ser confirmadas, canceladas ou concluidas pela recepcao.</p></article>`
           }
         </div>
       </article>
       <article class="seller-panel seller-panel-form">
         <div class="seller-panel-head"><div><small>edicao</small><h2>${h(editReservation.id ? "Reserva em andamento" : "Nova reserva manual")}</h2></div>${editReservation.id ? `<button type="button" class="seller-link-button danger-link" data-action="delete-reservation" data-id="${h(editReservation.id)}">Excluir</button>` : ""}</div>
         ${tplSellerReservationPreview(editReservation)}
+        ${
+          editReservation.id
+            ? `
+              <div class="seller-reservation-toolbar">
+                <div class="seller-reservation-meta">
+                  <small>${h(formatRequestCode(editReservation.id))}</small>
+                  <strong>${h(suite?.name || "Categoria")}</strong>
+                  <span>${h(formatDateRange(editReservation.checkin, editReservation.checkout) || "Defina o periodo")}</span>
+                </div>
+                <div class="seller-reservation-actions">
+                  <button type="button" class="seller-status-button" data-action="seller-status" data-id="${h(editReservation.id)}" data-status="confirmed">Confirmar</button>
+                  <button type="button" class="seller-status-button" data-action="seller-status" data-id="${h(editReservation.id)}" data-status="cancelled">Cancelar</button>
+                  <button type="button" class="seller-status-button" data-action="seller-status" data-id="${h(editReservation.id)}" data-status="completed">Concluir</button>
+                  ${contactHref ? `<a class="seller-link-button" href="${h(contactHref)}" target="_blank" rel="noreferrer noopener">Contato</a>` : ""}
+                </div>
+              </div>
+            `
+            : ""
+        }
         <form class="seller-form" id="seller-reservation-form">
           <input type="hidden" name="id" value="${h(editReservation.id || "")}" />
           <div class="seller-two-col">
             <label class="field-block"><span>Hospede</span><input name="guestName" value="${h(editReservation.guestName || "")}" required /></label>
-            <label class="field-block"><span>Contato</span><input name="guestContact" value="${h(editReservation.guestContact || "")}" required /></label>
+            <label class="field-block"><span>Contato</span><input name="guestContact" value="${h(editReservation.guestContact || "")}" autocomplete="tel" inputmode="tel" required /></label>
           </div>
           <div class="seller-two-col">
             <label class="field-block"><span>E-mail</span><input type="email" name="guestEmail" value="${h(editReservation.guestEmail || "")}" /></label>
@@ -1155,7 +1245,7 @@ function tplSellerOperations() {
         </div>
       </article>
       <article class="seller-panel seller-panel-wide">
-        <div class="seller-panel-head"><div><small>sql e go-live</small><h2>O que um site vendavel como este precisa ter</h2></div></div>
+        <div class="seller-panel-head"><div><small>sql e go-live</small><h2>Base operacional e publicacao</h2></div></div>
         <div class="ops-grid">
           ${state.content.ops.stack
             .map(
@@ -1383,6 +1473,7 @@ function startIntroBlurPhase() {
 
 function dismissIntro() {
   if (!state.introVisible) return;
+  heroTapStamp = 0;
   if (introTimer) {
     window.clearTimeout(introTimer);
     introTimer = 0;
@@ -1472,7 +1563,8 @@ function tplSellerReservationPreview(reservation) {
 
 function getPrimaryContactHref() {
   const resort = state.content.resort;
-  if (resort.reservationWhatsapp) return `https://wa.me/${resort.reservationWhatsapp}`;
+  const whatsapp = digitsOnly(resort.reservationWhatsapp);
+  if (whatsapp) return `https://wa.me/${whatsapp}`;
   if (resort.reservationEmail) return `mailto:${resort.reservationEmail}`;
   return resort.instagramUrl;
 }
@@ -1488,9 +1580,91 @@ function getContactLinks() {
   const resort = state.content.resort;
   const links = [];
   if (resort.reservationEmail) links.push({ label: resort.reservationEmail, href: `mailto:${resort.reservationEmail}`, external: false });
-  if (resort.reservationWhatsapp) links.push({ label: "WhatsApp direto", href: `https://wa.me/${resort.reservationWhatsapp}`, external: true });
+  if (digitsOnly(resort.reservationWhatsapp)) links.push({ label: "WhatsApp direto", href: `https://wa.me/${digitsOnly(resort.reservationWhatsapp)}`, external: true });
   links.push({ label: "Instagram oficial", href: resort.instagramUrl, external: true });
   return links;
+}
+
+function getReservationStatusOptions() {
+  return [
+    { value: "all", label: "todas" },
+    { value: "pending", label: "pendentes" },
+    { value: "confirmed", label: "confirmadas" },
+    { value: "cancelled", label: "canceladas" },
+    { value: "completed", label: "concluidas" },
+  ];
+}
+
+function getReservationStatusCounts() {
+  const counts = { all: 0, pending: 0, confirmed: 0, cancelled: 0, completed: 0 };
+  (state.content.reservations || []).forEach((reservation) => {
+    const status = String(reservation.status || "pending").toLowerCase();
+    counts.all += 1;
+    if (status in counts) counts[status] += 1;
+  });
+  return counts;
+}
+
+function sortReservationsForSeller(reservations) {
+  const priority = { pending: 0, confirmed: 1, completed: 2, cancelled: 3 };
+  return reservations.slice().sort((left, right) => {
+    const leftPriority = priority[String(left.status || "pending").toLowerCase()] ?? 9;
+    const rightPriority = priority[String(right.status || "pending").toLowerCase()] ?? 9;
+    if (leftPriority !== rightPriority) return leftPriority - rightPriority;
+    return String(right.createdAt || "").localeCompare(String(left.createdAt || ""));
+  });
+}
+
+function formatRequestCode(id) {
+  const normalized = String(id || "").replace(/^res-/, "").toUpperCase();
+  return normalized ? `#${normalized}` : "#RESERVA";
+}
+
+function formatDateTimeLabel(value) {
+  if (!value) return "sem horario";
+  try {
+    return new Intl.DateTimeFormat("pt-BR", {
+      day: "2-digit",
+      month: "short",
+      hour: "2-digit",
+      minute: "2-digit",
+    }).format(new Date(value));
+  } catch {
+    return value;
+  }
+}
+
+function getGuestContactHref(reservation) {
+  const email = String(reservation?.guestEmail || "").trim();
+  const digits = String(reservation?.guestContact || "").replace(/\D/g, "");
+  if (digits.length >= 10) {
+    const normalized = digits.length <= 11 ? `55${digits}` : digits;
+    return `https://wa.me/${normalized}`;
+  }
+  if (email) return `mailto:${email}`;
+  return "";
+}
+
+function openBookingPicker(fieldName) {
+  const form = app.querySelector("#booking-form");
+  if (!(form instanceof HTMLFormElement)) return;
+  const input = form.elements.namedItem(fieldName);
+  if (!(input instanceof HTMLInputElement)) return;
+  input.focus();
+  if (typeof input.showPicker === "function") {
+    input.showPicker();
+  }
+}
+
+function setReservationStatus(id, status) {
+  if (!id) return;
+  state.content.reservations = (state.content.reservations || []).map((reservation) =>
+    reservation.id === id ? { ...reservation, status } : reservation,
+  );
+  state.seller.reservationEditId = id;
+  state.seller.reservationFilter = status === "cancelled" || status === "completed" ? "all" : status;
+  persistContent();
+  setNotice(`Reserva atualizada para ${formatReservationStatus(status)}.`);
 }
 
 function getBookingSummary() {
@@ -1597,7 +1771,7 @@ function emptyReservation() {
     guests: 2,
     notes: "",
     status: "pending",
-    source: "site",
+    source: "manual",
     totalEstimate: 0,
     createdAt: "",
   };
@@ -1612,6 +1786,7 @@ function syncSelections() {
   if (!state.content.experiences.some((item) => item.id === state.seller.experienceEditId)) state.seller.experienceEditId = state.content.experiences[0]?.id || "";
   if (!state.content.instagramPosts.some((item) => item.id === state.seller.instagramEditId)) state.seller.instagramEditId = state.content.instagramPosts[0]?.id || "";
   if (!state.content.reservations.some((item) => item.id === state.seller.reservationEditId)) state.seller.reservationEditId = state.content.reservations[0]?.id || "";
+  if (!getReservationStatusOptions().some((item) => item.value === state.seller.reservationFilter)) state.seller.reservationFilter = "pending";
   if (!state.openFaq || !state.content.faq.some((item) => item.question === state.openFaq)) state.openFaq = state.content.faq[0]?.question || "";
   state.activeGalleryIndex = Math.max(0, Math.min(state.activeGalleryIndex, (getActiveSuite().gallery?.length || 1) - 1));
 }
@@ -1628,6 +1803,17 @@ function onClick(event) {
   if (dismissIntroTrigger) {
     dismissIntro();
     return;
+  }
+
+  const heroInteraction = event.target.closest("[data-hero-interaction]");
+  if (heroInteraction && state.introVisible) {
+    const now = Date.now();
+    if (now - heroTapStamp < 360) {
+      heroTapStamp = 0;
+      dismissIntro();
+      return;
+    }
+    heroTapStamp = now;
   }
 
   const bookingSuiteTrigger = event.target.closest("[data-booking-suite]");
@@ -1647,6 +1833,12 @@ function onClick(event) {
   const weekendTrigger = event.target.closest("[data-booking-weekend]");
   if (weekendTrigger) {
     applyBookingState(getNextWeekendRange());
+    return;
+  }
+
+  const nextWeekTrigger = event.target.closest("[data-booking-next-week]");
+  if (nextWeekTrigger) {
+    applyBookingState(getNextWeekRange());
     return;
   }
 
@@ -1710,6 +1902,13 @@ function onClick(event) {
     return;
   }
 
+  const reservationFilterTrigger = event.target.closest("[data-reservation-filter]");
+  if (reservationFilterTrigger) {
+    state.seller.reservationFilter = reservationFilterTrigger.getAttribute("data-reservation-filter") || "pending";
+    render();
+    return;
+  }
+
   const action = event.target.closest("[data-action]");
   if (!action) {
     const navLink = event.target.closest(".site-nav a");
@@ -1746,6 +1945,18 @@ function onClick(event) {
     render();
     return;
   }
+  if (actionName === "open-booking-picker") {
+    openBookingPicker(action.getAttribute("data-target") || "");
+    return;
+  }
+  if (actionName === "clear-booking-dates") {
+    applyBookingState({ checkin: "", checkout: "" });
+    return;
+  }
+  if (actionName === "seller-status") {
+    setReservationStatus(action.getAttribute("data-id") || "", action.getAttribute("data-status") || "pending");
+    return;
+  }
   if (actionName === "delete-suite") {
     deleteSuite(action.getAttribute("data-suite") || "");
     return;
@@ -1773,12 +1984,12 @@ function onInput(event) {
   const target = event.target;
   if (!(target instanceof HTMLInputElement || target instanceof HTMLSelectElement || target instanceof HTMLTextAreaElement)) return;
   const form = target.closest("form");
-  if (!form || form.getAttribute("id") !== "booking-form") return;
   let value = target.value;
-  if (target.name === "guestContact") {
+  if (target.name === "guestContact" || target.name === "reservationPhone" || target.name === "reservationWhatsapp") {
     value = formatPhoneInput(value);
     target.value = value;
   }
+  if (!form || form.getAttribute("id") !== "booking-form") return;
   applyBookingState({
     [target.name]: target.name === "guests" ? Number(value) : value,
   });
@@ -1838,9 +2049,17 @@ function onSubmit(event) {
 
     state.content.reservations = [reservation, ...(state.content.reservations || [])];
     state.seller.reservationEditId = reservation.id;
+    state.seller.reservationFilter = "pending";
     persistContent();
-    window.open(buildReservationUrl(getActiveSuite(), summary, reservation), "_blank", "noopener,noreferrer");
-    setNotice("Solicitação registrada. As datas agora aparecem bloqueadas como pendentes.");
+    state.booking = {
+      ...state.booking,
+      guestName: "",
+      guestContact: "",
+      guestEmail: "",
+      notes: "",
+    };
+    render();
+    setNotice(`Solicitacao ${formatRequestCode(reservation.id)} registrada e enviada para a recepcao.`);
     return;
   }
 
@@ -2024,6 +2243,7 @@ function saveReservation(fd) {
     : [payload, ...(state.content.reservations || [])];
 
   state.seller.reservationEditId = payload.id;
+  state.seller.reservationFilter = payload.status === "cancelled" || payload.status === "completed" ? "all" : payload.status;
   persistContent();
   setNotice(`Reserva de ${payload.guestName} salva com status ${formatReservationStatus(payload.status)}.`);
 }
@@ -2090,6 +2310,10 @@ function formatPhoneInput(value) {
   return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
 }
 
+function digitsOnly(value) {
+  return String(value || "").replace(/\D/g, "");
+}
+
 function syncBookingStudio() {
   if (state.route.name !== "buyer") return;
   const form = app.querySelector("#booking-form");
@@ -2130,6 +2354,11 @@ function syncBookingStudio() {
   if (weekendButton instanceof HTMLElement) {
     const weekend = getNextWeekendRange();
     weekendButton.classList.toggle("active", state.booking.checkin === weekend.checkin && state.booking.checkout === weekend.checkout);
+  }
+  const nextWeekButton = form.querySelector("[data-booking-next-week]");
+  if (nextWeekButton instanceof HTMLElement) {
+    const nextWeek = getNextWeekRange();
+    nextWeekButton.classList.toggle("active", state.booking.checkin === nextWeek.checkin && state.booking.checkout === nextWeek.checkout);
   }
 
   const minusButton = form.querySelector('[data-booking-guests-step="-1"]');
@@ -2258,8 +2487,8 @@ function buildReservationUrl(suite, summary, reservation) {
     .filter(Boolean)
     .join("\n");
 
-  if (resort.reservationWhatsapp) {
-    return `https://wa.me/${resort.reservationWhatsapp}?text=${encodeURIComponent(message)}`;
+  if (digitsOnly(resort.reservationWhatsapp)) {
+    return `https://wa.me/${digitsOnly(resort.reservationWhatsapp)}?text=${encodeURIComponent(message)}`;
   }
   if (resort.reservationEmail) {
     return `mailto:${resort.reservationEmail}?subject=${encodeURIComponent(`Solicitação | ${suite.name}`)}&body=${encodeURIComponent(message)}`;
@@ -2283,6 +2512,14 @@ function onKeydown(event) {
     event.preventDefault();
     location.hash = "/vendedor";
   }
+}
+
+function onDoubleClick(event) {
+  const heroInteraction = event.target.closest("[data-hero-interaction]");
+  if (!heroInteraction || !state.introVisible) return;
+  event.preventDefault();
+  heroTapStamp = 0;
+  dismissIntro();
 }
 
 function isSellerLogged() {

@@ -32,7 +32,7 @@
 
 .stat-card strong {
   display: block;
-  font-family: "Cormorant Garamond", serif;
+  font-family: "Playfair Display", serif;
   font-size: clamp(3rem, 4vw, 4.7rem);
   line-height: 0.88;
 }
@@ -111,7 +111,7 @@
 .story-card strong {
   display: block;
   margin: 0.5rem 0 0.6rem;
-  font-family: "Cormorant Garamond", serif;
+  font-family: "Playfair Display", serif;
   font-size: clamp(1.9rem, 3vw, 2.8rem);
   line-height: 0.96;
 }
@@ -162,6 +162,19 @@
   color: var(--text);
   padding: 1rem 1.1rem;
   cursor: pointer;
+  transition:
+    transform 0.28s var(--ease),
+    border-color 0.28s var(--ease),
+    background 0.28s var(--ease),
+    box-shadow 0.28s var(--ease);
+}
+
+.suite-chip:hover,
+.seller-card:hover,
+.seller-link-button:hover {
+  transform: translateY(-2px);
+  border-color: rgba(223, 190, 134, 0.28);
+  box-shadow: 0 24px 44px -28px rgba(0, 0, 0, 0.72);
 }
 
 .suite-chip.active,
@@ -187,7 +200,7 @@
 .seller-login-card h1 {
   display: block;
   margin: 0.28rem 0 0.2rem;
-  font-family: "Cormorant Garamond", serif;
+  font-family: "Playfair Display", serif;
   font-size: 1.7rem;
   line-height: 0.96;
 }
@@ -301,7 +314,7 @@
 .ritual-card strong {
   display: block;
   margin-bottom: 1rem;
-  font-family: "Cormorant Garamond", serif;
+  font-family: "Playfair Display", serif;
   font-size: 1.8rem;
 }
 
@@ -477,7 +490,7 @@
 
 .seller-kpis strong {
   display: block;
-  font-family: "Cormorant Garamond", serif;
+  font-family: "Playfair Display", serif;
   font-size: 2rem;
   line-height: 0.92;
 }
@@ -555,7 +568,7 @@
 .seller-media-preview-copy strong {
   display: block;
   margin: 0.5rem 0 0.4rem;
-  font-family: "Cormorant Garamond", serif;
+  font-family: "Playfair Display", serif;
   font-size: 1.8rem;
 }
 
@@ -591,6 +604,122 @@
   justify-content: space-between;
   align-items: start;
   gap: 1rem;
+}
+
+.seller-card-copy {
+  min-width: 0;
+}
+
+.seller-card-copy span + span {
+  margin-top: 0.2rem;
+}
+
+.seller-card-reservation {
+  align-items: stretch;
+}
+
+.seller-card-reservation small:last-child {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.seller-filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+  margin-bottom: 1rem;
+}
+
+.seller-filter-pill {
+  min-height: 46px;
+  padding: 0.7rem 0.95rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 248, 236, 0.1);
+  background: rgba(255, 248, 236, 0.02);
+  color: var(--text);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.7rem;
+  transition:
+    transform 0.28s var(--ease),
+    border-color 0.28s var(--ease),
+    background 0.28s var(--ease),
+    box-shadow 0.28s var(--ease);
+}
+
+.seller-filter-pill:hover {
+  transform: translateY(-2px);
+  border-color: rgba(223, 190, 134, 0.28);
+  box-shadow: 0 24px 44px -28px rgba(0, 0, 0, 0.72);
+}
+
+.seller-filter-pill span {
+  color: rgba(245, 239, 228, 0.78);
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.seller-filter-pill strong {
+  font-size: 0.95rem;
+}
+
+.seller-filter-pill.active {
+  border-color: rgba(156, 201, 187, 0.42);
+  background: linear-gradient(180deg, rgba(156, 201, 187, 0.16), rgba(255, 248, 236, 0.04));
+}
+
+.seller-reservation-toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 1rem;
+  align-items: center;
+  padding: 1rem 1.05rem;
+  margin-bottom: 1rem;
+  border-radius: var(--radius-lg);
+  border: 1px solid rgba(255, 248, 236, 0.1);
+  background: rgba(255, 248, 236, 0.03);
+}
+
+.seller-reservation-meta small,
+.seller-reservation-meta span {
+  display: block;
+  color: var(--muted);
+}
+
+.seller-reservation-meta strong {
+  display: block;
+  margin: 0.3rem 0;
+  font-family: "Playfair Display", serif;
+  font-size: 1.55rem;
+}
+
+.seller-reservation-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.7rem;
+}
+
+.seller-status-button {
+  min-height: 44px;
+  padding: 0 1rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 248, 236, 0.12);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text);
+  transition:
+    transform 0.28s var(--ease),
+    border-color 0.28s var(--ease),
+    background 0.28s var(--ease),
+    box-shadow 0.28s var(--ease);
+}
+
+.seller-status-button:hover {
+  transform: translateY(-2px);
+  border-color: rgba(223, 190, 134, 0.28);
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 24px 44px -28px rgba(0, 0, 0, 0.72);
 }
 
 .seller-login-shell {
@@ -637,7 +766,7 @@
 .seller-empty-state strong {
   display: block;
   margin: 0.45rem 0 0.5rem;
-  font-family: "Cormorant Garamond", serif;
+  font-family: "Playfair Display", serif;
   font-size: 2rem;
   line-height: 0.96;
 }
@@ -675,7 +804,7 @@
 .seller-hero-strip strong {
   display: block;
   margin: 0.48rem 0 0.38rem;
-  font-family: "Cormorant Garamond", serif;
+  font-family: "Playfair Display", serif;
   font-size: 2.05rem;
 }
 
@@ -829,7 +958,7 @@
 
 .site-footer-brand strong {
   display: block;
-  font-family: "Cormorant Garamond", serif;
+  font-family: "Playfair Display", serif;
   font-size: 1.85rem;
 }
 

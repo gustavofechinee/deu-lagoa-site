@@ -57,6 +57,14 @@
   .seller-media-preview {
     grid-template-columns: 1fr;
   }
+
+  .seller-reservation-toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .seller-reservation-actions {
+    justify-content: flex-start;
+  }
 }
 
 @media (max-width: 860px) {
@@ -119,6 +127,15 @@
   .ops-grid,
   .seller-hero-strip {
     grid-template-columns: 1fr;
+  }
+
+  .seller-filter-row {
+    gap: 0.55rem;
+  }
+
+  .seller-filter-pill {
+    flex: 1 1 calc(50% - 0.55rem);
+    justify-content: space-between;
   }
 }
 
@@ -187,6 +204,15 @@
     padding: 1.15rem;
   }
 
+  .booking-date-input-wrap {
+    grid-template-columns: 1fr;
+  }
+
+  .booking-date-trigger {
+    width: 100%;
+    justify-content: center;
+  }
+
   .reservation-side-image {
     min-height: 260px;
   }
@@ -208,6 +234,16 @@
 
   .mobile-dock {
     display: flex;
+  }
+
+  .seller-filter-pill,
+  .seller-status-button {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .seller-reservation-actions {
+    width: 100%;
   }
 }
 
