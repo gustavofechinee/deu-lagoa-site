@@ -1,60 +1,48 @@
 # Deu Lagoa Uruaú
 
-Protótipo institucional com fluxo de reserva e área interna de operação.
+Projeto conceitual para apresentação da experiência digital da Deu Lagoa Uruaú.
 
-## Aviso
+O repositório reúne uma vitrine institucional, um fluxo de consulta de hospedagem e uma área interna para operação de reservas e conteúdo.
 
-Este repositório representa **um protótipo navegável** criado para apresentação visual, validação de fluxo e demonstração de produto.
+## Importante
 
-Ele **não deve ser tratado como sistema final de produção**. Algumas partes ainda operam em armazenamento local do navegador e existem apenas para simular a experiência completa.
+Este material é **um protótipo**.
 
-## Link publicado
+Ele foi montado para apresentação, validação visual e demonstração de fluxo. A estrutura atual não substitui um ambiente de produção com backend, autenticação real e persistência fora do navegador.
 
-- Site: [gustavofechinee.github.io/deu-lagoa-site](https://gustavofechinee.github.io/deu-lagoa-site/#/hotel)
+## Site publicado
 
-## Objetivo do protótipo
+- [gustavofechinee.github.io/deu-lagoa-site](https://gustavofechinee.github.io/deu-lagoa-site/#/hotel)
 
-O projeto foi montado para demonstrar:
-
-- presença institucional da pousada em uma interface mais editorial
-- abertura cinematográfica com vídeo
-- consulta de hospedagem com bloqueio provisório de datas
-- área interna para operação de reservas, mídia e conteúdo
-
-## O que está incluído
+## Escopo atual
 
 - página pública da pousada em `#/hotel`
 - área interna em `#/vendedor`
+- abertura com vídeo
 - formulário de consulta de hospedagem
-- fila interna de reservas pendentes
-- edição de conteúdo institucional, imagens e destaques
-- deploy via GitHub Pages
+- fila interna de solicitações
+- edição de conteúdo, mídia e destaques
 
-## O que ainda é protótipo
+## Limites do protótipo
 
 - persistência principal em `localStorage`
 - autenticação interna por código único
-- fluxo comercial sem backend real
-- sem integração definitiva com PMS, CRM, gateway ou calendário externo
-
-## Rotas
-
-- público: `#/hotel`
-- vendedor: `#/vendedor`
+- sem integração definitiva com calendário, CRM ou PMS
+- sem backend transacional para reservas
 
 ## Acesso interno
 
-- atalho rápido: `Ctrl + Shift + V`
+- atalho: `Ctrl + Shift + V`
 - código atual: `deulagoa2026`
 
-## Executar localmente
+## Rodar localmente
 
 ```bash
 npm install
 npm run dev
 ```
 
-Abra no navegador:
+Abra:
 
 ```text
 http://localhost:5173/#/hotel
@@ -66,28 +54,19 @@ http://localhost:5173/#/hotel
 npm run build
 ```
 
-## Publicação
-
-O projeto está configurado para publicação em GitHub Pages.
-
-- workflow: `.github/workflows/pages.yml`
-- build estático publicado: `site/`
-
 ## Estrutura principal
 
-- `src/app/deu-lagoa-app.js`: render, rotas e interações
-- `src/data/deu-lagoa-content.js`: conteúdo institucional e seed inicial
-- `src/utils/availability.js`: cálculo de disponibilidade e conflito de datas
+- `src/app/deu-lagoa-app.js`: renderização, rotas e interações
+- `src/data/deu-lagoa-content.js`: conteúdo base da apresentação
+- `src/utils/availability.js`: disponibilidade e conflito de datas
 - `src/utils/storage.js`: persistência local
-- `src/styles/`: tema, layout e responsividade
-- `database/postgres-schema.sql`: base inicial pensada para evolução futura
+- `src/styles/`: layout, tema e responsividade
+- `.github/workflows/pages.yml`: publicação no GitHub Pages
 
-## Observação de escopo
+## Evolução esperada
 
-O foco deste repositório é **apresentação e validação de experiência**.
+Para levar este projeto para produção, os próximos passos seriam:
 
-Para transformar este protótipo em operação real, o próximo passo técnico seria:
-
-1. trocar `localStorage` por backend real
-2. substituir o código fixo por autenticação de usuários
-3. integrar reservas, disponibilidade e contatos com uma base persistente
+1. substituir `localStorage` por backend real
+2. trocar o código fixo por autenticação de usuários
+3. integrar reservas e disponibilidade a uma base persistente
