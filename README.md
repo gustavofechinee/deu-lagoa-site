@@ -1,14 +1,14 @@
 # Deu Lagoa Uruaú
 
-Projeto conceitual para apresentação da experiência digital da Deu Lagoa Uruaú.
+Site desenvolvido para a Deu Lagoa Uruaú, pensado para apresentar a pousada, organizar consultas de hospedagem e apoiar a operação interna.
 
-O repositório reúne uma vitrine institucional, um fluxo de consulta de hospedagem e uma área interna para operação de reservas e conteúdo.
+O repositório reúne a experiência pública do site e uma área interna para gestão de reservas, mídia e conteúdo.
 
 ## Importante
 
-Este material é **um protótipo**.
+Esta versão do repositório funciona como **demonstração navegável da proposta entregue**.
 
-Ele foi montado para apresentação, validação visual e demonstração de fluxo. A estrutura atual não substitui um ambiente de produção com backend, autenticação real e persistência fora do navegador.
+O projeto foi feito para uma empresa real, mas a implementação publicada aqui ainda não substitui um ambiente de produção com backend, autenticação completa e persistência fora do navegador.
 
 ## Site publicado
 
@@ -20,10 +20,10 @@ Ele foi montado para apresentação, validação visual e demonstração de flux
 - área interna em `#/vendedor`
 - abertura com vídeo
 - formulário de consulta de hospedagem
-- fila interna de solicitações
+- fila interna de solicitações de reserva
 - edição de conteúdo, mídia e destaques
 
-## Limites do protótipo
+## Limites da versão publicada
 
 - persistência principal em `localStorage`
 - autenticação interna por código único
